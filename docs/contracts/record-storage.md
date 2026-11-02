@@ -25,6 +25,8 @@ gateway는 inference 판정이 fail일 때만 uploader에 판정 결과와 사�
 
 `has_helmet`과 `has_vest` 중 하나 이상은 `false`여야 한다 (위반만 저장).
 
+`has_helmet` `has_vest` `confidence`는 [inference.md](inference.md)의 응답 필드와 같다. gateway는 inference 응답 JSON에 `device_id`(필요하면 `detected_at`)를 더해 그대로 `result`로 넘기면 된다. 위 표에 없는 필드(`verdict`, `persons`, `detections`, `infer_ms` 등)는 uploader가 무시한다.
+
 ```bash
 curl -F 'result={"device_id":"esp32-01","has_helmet":false,"has_vest":true,"confidence":0.82}' \
      -F 'image=@no_helmet.jpg;type=image/jpeg' \
