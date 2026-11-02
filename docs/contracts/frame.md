@@ -49,13 +49,14 @@ curl -H "X-Device-Id: test-curl" -H "Content-Type: image/jpeg" \
 
 | 코드 | 본문 | 뜻 | ESP32가 할 일 |
 |---|---|---|---|
-| `202` | `{"status": "queued", "queue": 1}` | 대기 줄에 넣음 | 쿨다운 후 다음 감지 |
+| `202` | `{"status": "queued", "queue": 1, "frame": "ab12cd34"}` | 대기 줄에 넣음 | 쿨다운 후 다음 감지 |
 | `400` | `{"status": "rejected", "detail": "…"}` | `X-Device-Id`가 없거나 틀림, 본문이 JPEG가 아님 | 버린다. 시리얼에 detail 출력 (설정·코드 문제) |
 | `401` | 〃 | 인터넷으로 보냈는데 `X-Device-Token`이 없거나 틀림 | 버린다. `config.h`의 토큰을 확인한다 |
 | `413` | 〃 | 2MB 초과 | 버린다. 해상도·품질을 낮춘다 |
 | `503` | `{"status": "busy", "detail": "…"}` | 대기 줄이 가득 참 | 버린다 (재시도하지 않는다. 다음 감지 프레임이 더 최신이다) |
 
 - 연결 실패·응답 없음은 ESP32 쪽 HTTP 제한 시간(권장 5초)으로 끊고 버린다.
+- `frame`은 gateway가 붙인 사진 번호(8자리 hex)다. gateway·inference·uploader 로그에 `frame=`으로 찍히므로, ESP32 시리얼에 찍힌 202 본문으로 Pi 로그를 찾는다. ESP32가 따로 처리할 필요는 없다.
 - 판정 결과는 ESP32에 돌려주지 않는다. 위반 기록은 Supabase와 웹에서 본다.
 
 ## 인터넷으로 보낼 때 (Pi와 다른 네트워크의 ESP32)

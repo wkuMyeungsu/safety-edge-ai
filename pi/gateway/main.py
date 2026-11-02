@@ -2,6 +2,7 @@
 
 계약: docs/contracts/frame.md (esp32 → gateway), inference.md, record-storage.md
 - POST /frame    본문 = JPEG 바이트, 헤더 X-Device-Id. 대기 줄에 넣고 바로 202를 돌려준다.
+                 202 본문의 frame(사진 번호)이 inference·uploader 로그까지 이어진다.
 - GET  /health   상태, 대기 줄 길이, 처리 건수
 - GET  /recent   최근 처리 결과 (디버깅·테스트용)
 처리 작업자는 1개다. inference가 한 번에 한 장씩 처리하기 때문이다.
@@ -17,6 +18,7 @@ import logging
 import os
 import re
 import time
+import uuid
 from collections import Counter, deque
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
@@ -49,6 +51,7 @@ logging.getLogger("httpx").setLevel(logging.WARNING)  # 요청마다 찍히는 �
 
 @dataclass
 class Frame:
+    frame_id: str  # 사진 번호, 8자리 hex. 로그로 한 장을 끝까지 따라가는 데 쓴다
     device_id: str
     image: bytes
     received_at: datetime
@@ -72,19 +75,22 @@ async def call_inference(client: httpx.AsyncClient, frame: Frame) -> dict | None
     """판정 JSON, 실패하면 None (계약상 inference 오류는 버리고 로그만 남긴다)."""
     try:
         r = await client.post(f"{INFERENCE_URL}/predict", content=frame.image,
-                              headers={"Content-Type": "image/jpeg"}, timeout=INFERENCE_TIMEOUT)
+                              headers={"Content-Type": "image/jpeg", "X-Frame-Id": frame.frame_id},
+                              timeout=INFERENCE_TIMEOUT)
     except httpx.HTTPError as e:
-        log.error("inference 호출 실패 (%s): %r", frame.device_id, e)
+        log.error("inference 호출 실패 frame=%s device=%s error=%r", frame.frame_id, frame.device_id, e)
         return None
     if r.status_code != 200:
-        log.error("inference %d (%s): %s", r.status_code, frame.device_id, r.text[:200])
+        log.error("inference 응답 오류 frame=%s device=%s code=%d detail=%s",
+                  frame.frame_id, frame.device_id, r.status_code, r.text[:200])
         return None
     return r.json()
 
 
 async def call_uploader(client: httpx.AsyncClient, frame: Frame, result: dict) -> str:
     """'stored' · 'buffered' · 'error'."""
-    record = {**result, "device_id": frame.device_id, "detected_at": frame.received_at.isoformat()}
+    record = {**result, "device_id": frame.device_id, "detected_at": frame.received_at.isoformat(),
+              "frame_id": frame.frame_id}
     record.pop("detections", None)  # uploader는 쓰지 않는다
     try:
         r = await client.post(
@@ -94,17 +100,19 @@ async def call_uploader(client: httpx.AsyncClient, frame: Frame, result: dict) -
             timeout=UPLOADER_TIMEOUT,
         )
     except httpx.HTTPError as e:
-        log.error("uploader 호출 실패 (%s): %r", frame.device_id, e)
+        log.error("uploader 호출 실패 frame=%s device=%s error=%r", frame.frame_id, frame.device_id, e)
         return "error"
     if r.status_code in (201, 202):
         return r.json().get("status", "stored" if r.status_code == 201 else "buffered")
-    log.error("uploader %d (%s): %s", r.status_code, frame.device_id, r.text[:200])
+    log.error("uploader 응답 오류 frame=%s device=%s code=%d detail=%s",
+              frame.frame_id, frame.device_id, r.status_code, r.text[:200])
     return "error"
 
 
 async def process(client: httpx.AsyncClient, frame: Frame) -> dict:
     started = time.monotonic()
     entry = {
+        "frame": frame.frame_id,
         "device_id": frame.device_id,
         "received_at": frame.received_at.isoformat(),
         "wait_ms": round((started - frame.queued) * 1000),
@@ -125,7 +133,8 @@ async def process(client: httpx.AsyncClient, frame: Frame) -> dict:
             stats[f"upload_{entry['upload']}"] += 1
     stats[f"verdict_{entry['verdict']}"] += 1
     entry["total_ms"] = round((time.monotonic() - frame.queued) * 1000)
-    log.info("%s %s helmet=%s vest=%s upload=%s 대기 %dms 전체 %dms", frame.device_id, entry["verdict"],
+    log.info("처리 끝 frame=%s device=%s verdict=%s helmet=%s vest=%s upload=%s wait_ms=%d total_ms=%d",
+             frame.frame_id, frame.device_id, entry["verdict"],
              entry.get("has_helmet"), entry.get("has_vest"), entry["upload"], entry["wait_ms"], entry["total_ms"])
     return entry
 
@@ -136,7 +145,7 @@ async def worker(client: httpx.AsyncClient) -> None:
         try:
             recent.append(await process(client, frame))
         except Exception:  # 한 장 때문에 작업자가 멈추지 않게
-            log.exception("처리 중 예외 (%s)", frame.device_id)
+            log.exception("처리 중 예외 frame=%s device=%s", frame.frame_id, frame.device_id)
             stats["verdict_error"] += 1
         finally:
             queue.task_done()
@@ -193,14 +202,14 @@ async def frame(request: Request):
     if not body.startswith(b"\xff\xd8\xff"):
         return error(400, "본문이 JPEG가 아님 (JPEG 바이트를 그대로 보낸다)")
 
-    item = Frame(device_id, bytes(body), datetime.now(timezone.utc), time.monotonic(),
+    item = Frame(uuid.uuid4().hex[:8], device_id, bytes(body), datetime.now(timezone.utc), time.monotonic(),
                  number(request.headers.get("x-person-score"), float), number(request.headers.get("x-person-count"), int))
     try:
         queue.put_nowait(item)
     except asyncio.QueueFull:
         return error(503, "대기 줄이 가득 참. 이 사진은 버린다", status="busy")
     stats["received"] += 1
-    return JSONResponse({"status": "queued", "queue": queue.qsize()}, status_code=202)
+    return JSONResponse({"status": "queued", "queue": queue.qsize(), "frame": item.frame_id}, status_code=202)
 
 
 if __name__ == "__main__":

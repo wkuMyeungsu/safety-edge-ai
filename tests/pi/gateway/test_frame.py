@@ -3,6 +3,7 @@
 CI에는 모델이 없을 수 있어서 여기서는 판정 결과를 보지 않는다. 실제 판정은 tests/e2e.
 """
 
+import re
 import time
 import uuid
 
@@ -42,6 +43,17 @@ def test_queued_frame_is_processed(gateway_url, image_bytes):
     # 모델이 없으면 inference가 503 → error. 있으면 판정 결과
     assert entry["verdict"] in ("pass", "fail", "no_person", "error")
     assert entry["received_at"].endswith("+00:00")
+
+
+def test_frame_id_links_response_and_recent(gateway_url, image_bytes):
+    # 202 본문의 사진 번호가 /recent 항목과 같아야 ESP32 시리얼과 Pi 로그를 이을 수 있다
+    device_id = f"test-{uuid.uuid4().hex[:8]}"
+    r = post(gateway_url, image_bytes("blank.jpg"), device_id)
+    assert r.status_code == 202
+    frame = r.json()["frame"]
+    assert re.fullmatch(r"[0-9a-f]{8}", frame)
+    assert wait_recent(gateway_url, device_id)["frame"] == frame
+    assert post(gateway_url).json()["frame"] != frame
 
 
 def test_person_headers_are_recorded(gateway_url, image_bytes):
