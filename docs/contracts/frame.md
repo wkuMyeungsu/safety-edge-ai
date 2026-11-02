@@ -10,7 +10,7 @@ ESP32는 사람을 감지한 프레임만 보낸다. gateway는 받자마자 대
 ```
 POST http://<Pi IP>:8001/frame
 Content-Type: image/jpeg
-X-Device-Id: cam-01
+X-Device-Id: cam-myeungsu
 
 <카메라 JPEG 바이트 그대로>
 ```
@@ -20,7 +20,7 @@ X-Device-Id: cam-01
 | 본문 | JPEG 바이트 그대로 (multipart 아님). `FF D8 FF`로 시작해야 한다 |
 | 크기 | 2MB 이하 (inference 제한과 같다) |
 | 해상도 | 지금 펌웨어는 QVGA 320×240, JPEG 품질 12 (10~20KB). 판정 정확도가 모자라면 VGA 640×480까지 올린다 (모델 입력이 640이라 그 이상은 의미 없음) |
-| `X-Device-Id` | 필수. 영문·숫자·`-`·`_`, 1~64자. `config.h`의 `DEVICE_ID` |
+| `X-Device-Id` | 필수. 영문·숫자·`-`·`_`, 1~64자. `config.h`의 `DEVICE_ID`. 이름 규칙은 아래 "장치 ID" 절 |
 | `X-Person-Score` | 선택. ESP32 사람 감지 점수 (0~1). gateway는 `/recent`에 기록만 한다 |
 | `X-Person-Count` | 선택. ESP32가 찾은 사람 수. gateway는 `/recent`에 기록만 한다 |
 | `X-Device-Token` | **인터넷으로 보낼 때만** 필수 (아래 절). 같은 네트워크에서는 보내지 않아도 된다 |
@@ -28,9 +28,22 @@ X-Device-Id: cam-01
 선택 헤더가 없거나 숫자가 아니어도 사진은 받는다 (값만 `null`).
 
 ```bash
-curl -H "X-Device-Id: cam-01" -H "Content-Type: image/jpeg" \
+curl -H "X-Device-Id: test-curl" -H "Content-Type: image/jpeg" \
      --data-binary @frame.jpg http://localhost:8001/frame
 ```
+
+## 장치 ID
+
+누가 보낸 기록인지 `device_id`로 구분한다 (Supabase `safety_logs.device_id`, 사진 경로 `violations/<device_id>/…`, 웹 장치 필터).
+
+| 용도 | 형식 | 예 |
+|---|---|---|
+| 팀원 각자의 ESP32 | `cam-<이름>` | `cam-myeungsu`, `cam-daehee`, `cam-woojin`, `cam-doeun`, `cam-jina` |
+| 테스트 (curl, pytest, 시험 전송) | `test-<아무거나>` | `test-funnel`, `test-curl` |
+
+- 같은 ID를 두 장치가 쓰지 않는다. `config.example.h`의 기본값을 그대로 쓰지 않는다.
+- 테스트 기록은 `device_id`가 `test-`로 시작하므로 골라서 지울 수 있다.
+- 시연용으로 따로 설치하는 카메라가 생기면 이 표에 규칙을 더한다.
 
 ## 응답
 
@@ -52,7 +65,7 @@ Pi는 명수 집 네트워크에 있다. 다른 곳의 ESP32는 Tailscale Funnel
 ```
 POST https://<Pi 이름>.<tailnet>.ts.net/frame
 Content-Type: image/jpeg
-X-Device-Id: cam-02
+X-Device-Id: cam-daehee
 X-Device-Token: <팀 공용 토큰>
 ```
 
