@@ -79,3 +79,18 @@ python -m pytest tests/pi/inference
 입출력 호환성·수치 일치는 사진별 정확도를 보장하지 않는다. 실제 사진 검사는 HTTP 테스트에서 수행한다. Pi 5의 추론 시간·메모리·ESP32 연결 검증은 실물을 가진 명수 담당이며, 측정 시 커밋과 모델 SHA256을 함께 기록한다.
 
 실제 회귀 사진의 원본 라벨·라이선스·해시는 [tests/pi/inference/images/README.md](../../tests/pi/inference/images/README.md)에 있다. `expected.json`의 착용·미착용 기대값은 모델 출력과 별개로 유지한다.
+
+## 실제 서버 반복 실행
+
+서버를 최신 커밋과 검증한 `MODEL_PATH`로 다시 시작한 뒤, 표준 라이브러리만 사용하는 도구로 실제 `/predict`를 반복 호출한다. 모델이 없는 서버, 해시·클래스 불일치, 기대 판정 불일치는 실패로 처리한다.
+
+```bash
+python pi/models/run_http_smoke.py --url http://127.0.0.1:8003 \
+  --server-label "실제로 서버를 실행한 장비와 OS" \
+  --repeats 10 --parallel 48 --output smoke-result.json
+```
+
+- 사진마다 한 번 예열 후 10회씩 측정한다. 기본 사진 4종이면 40회다. 추가로 동시 요청 48개와 `/health` 응답을 확인한다.
+- 보고서에는 코드 커밋, 로컬 모델 SHA256, 원본 판정 JSON, 개별 측정값, 중앙값·P95·최댓값이 들어 있다. HTTP 시간은 전체 왕복 시간, `infer_ms`는 서버 전처리부터 판정까지의 시간이다. 비동기 대기 시간과 JPEG 디코딩 시간은 `infer_ms`에 포함하지 않는다.
+- `/health`는 서버 파일 해시를 제공하지 않는다. 도구는 이름·클래스와 로컬 파일 해시만 대조하므로 서버의 `MODEL_PATH`가 해당 파일인지 직접 확인해야 한다.
+- [2026-11-02 PC 실행 결과](reports/http-smoke-2026-11-02-pc.json): 40회 기대 판정 일치, 추론 중앙값 176.5ms/P95 301ms, 48개 동시 요청 중 상태 응답 3.766ms. 이 값은 Windows PC 결과이며 Pi 성능이나 현장 정확도 평가가 아니다.
