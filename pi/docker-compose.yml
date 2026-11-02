@@ -7,11 +7,22 @@ x-health: &health
   start_period: 30s     # 기동 직후 30초 동안은
   start_interval: 1s    # 1초마다 검사해서 healthy를 빨리 알린다 (Docker Engine 25 이상)
 
+# 세 서비스 공통 환경 변수 (로그 설계 4절). COMMIT은 deploy.sh가 넘긴다
+x-env: &env
+  TZ: Asia/Seoul                    # 로그 시각을 한국 시각으로. JSON 안의 시각은 계약대로 UTC
+  LOG_LEVEL: ${LOG_LEVEL:-INFO}     # 문제를 볼 때만 LOG_LEVEL=DEBUG docker compose up -d <서비스>
+  COMMIT: ${COMMIT:-unknown}        # 시작 로그에 찍혀 측정 숫자와 커밋을 잇는다
+
+x-logging: &logging
+  driver: json-file
+  options: { max-size: "10m", max-file: "3" }   # 서비스당 최대 30MB (Pi SD카드 보호)
+
 services:
   gateway:
     build: ./gateway
     image: safety-edge-ai/gateway:${TAG:-dev}
     environment:
+      <<: *env
       SERVICE_NAME: gateway
       PORT: "8001"
       INFERENCE_URL: http://inference:8003
@@ -21,6 +32,7 @@ services:
     depends_on: [inference, uploader]
     mem_limit: 256m
     restart: unless-stopped
+    logging: *logging
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request;urllib.request.urlopen('http://localhost:8001/health')"]
       <<: *health
@@ -29,12 +41,14 @@ services:
     build: ./inference
     image: safety-edge-ai/inference:${TAG:-dev}
     environment:
+      <<: *env
       SERVICE_NAME: inference
       PORT: "8003"
       MODEL_PATH: /models/ppe_yolov8.onnx
     volumes: ["./models:/models:ro"]
     mem_limit: 1g
     restart: unless-stopped
+    logging: *logging
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request;urllib.request.urlopen('http://localhost:8003/health')"]
       <<: *health
@@ -43,6 +57,7 @@ services:
     build: ./uploader
     image: safety-edge-ai/uploader:${TAG:-dev}
     environment:
+      <<: *env
       SERVICE_NAME: uploader
       PORT: "8004"
       BUFFER_DIR: /buffer
@@ -52,6 +67,7 @@ services:
     volumes: ["./buffer:/buffer"]
     mem_limit: 256m
     restart: unless-stopped
+    logging: *logging
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request;urllib.request.urlopen('http://localhost:8004/health')"]
       <<: *health

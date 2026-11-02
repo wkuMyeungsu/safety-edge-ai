@@ -65,7 +65,7 @@ case "${1:-status}" in
       fail "브랜치·커밋을 찾지 못함: $ref (push했는지 확인)"
     fi
     git log -1 --format='배포할 커밋 %h %s (%an)'
-    (cd pi && docker compose up --build -d --wait --wait-timeout 180 && docker image prune -f)
+    (cd pi && COMMIT=$(git rev-parse --short HEAD) docker compose up --build -d --wait --wait-timeout 180 && docker image prune -f)
     hold "$min" "$ref" ;;
 
   hold)

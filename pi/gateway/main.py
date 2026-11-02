@@ -44,9 +44,12 @@ PROXY_HEADERS = ("x-forwarded-for", "forwarded", "cf-connecting-ip", "tailscale-
 MAX_BYTES = 2 * 1024 * 1024  # inference 제한과 같다
 DEVICE_ID = re.compile(r"^[A-Za-z0-9_-]{1,64}$")  # uploader 검사와 같다
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s gateway %(levelname)s %(message)s")
-log = logging.getLogger("gateway")
+# 팀 로그 형식 (로그 설계 3절). 세 서비스가 같은 줄을 쓴다
+logging.basicConfig(level=os.environ.get("LOG_LEVEL", "INFO"),
+                    format="%(asctime)s %(levelname)-8s %(name)s %(filename)s:%(lineno)d %(message)s")
 logging.getLogger("httpx").setLevel(logging.WARNING)  # 요청마다 찍히는 로그는 끈다
+logging.getLogger("httpcore").setLevel(logging.WARNING)
+log = logging.getLogger("pi.gateway")
 
 
 @dataclass
@@ -67,7 +70,7 @@ recent: deque = deque(maxlen=RECENT_MAX)
 
 def error(code: int, detail: str, status: str = "rejected") -> JSONResponse:
     stats[{401: "unauthorized", 503: "busy"}.get(code, "rejected")] += 1
-    log.warning("거부 %d: %s", code, detail)
+    log.warning("거부 code=%d detail=%s", code, detail)
     return JSONResponse({"status": status, "detail": detail}, status_code=code)
 
 
@@ -109,6 +112,11 @@ async def call_uploader(client: httpx.AsyncClient, frame: Frame, result: dict) -
     return "error"
 
 
+def lower(value):
+    """로그의 true·false를 소문자로 (로그 설계 3-4). None은 그대로."""
+    return str(value).lower() if isinstance(value, bool) else value
+
+
 async def process(client: httpx.AsyncClient, frame: Frame) -> dict:
     started = time.monotonic()
     entry = {
@@ -126,16 +134,20 @@ async def process(client: httpx.AsyncClient, frame: Frame) -> dict:
         entry["verdict"] = "error"
     else:
         entry.update(verdict=result.get("verdict"), has_helmet=result.get("has_helmet"),
-                     has_vest=result.get("has_vest"), confidence=result.get("confidence"),
+                     has_vest=result.get("has_vest"), confidence=result.get("confidence"), persons=result.get("persons"),
                      infer_ms=result.get("infer_ms"))
         if entry["verdict"] == "fail":
+            sent = time.monotonic()
             entry["upload"] = await call_uploader(client, frame, result)
+            entry["upload_ms"] = round((time.monotonic() - sent) * 1000)
             stats[f"upload_{entry['upload']}"] += 1
     stats[f"verdict_{entry['verdict']}"] += 1
     entry["total_ms"] = round((time.monotonic() - frame.queued) * 1000)
-    log.info("처리 끝 frame=%s device=%s verdict=%s helmet=%s vest=%s upload=%s wait_ms=%d total_ms=%d",
-             frame.frame_id, frame.device_id, entry["verdict"],
-             entry.get("has_helmet"), entry.get("has_vest"), entry["upload"], entry["wait_ms"], entry["total_ms"])
+    log.info("처리 끝 frame=%s device=%s verdict=%s helmet=%s vest=%s persons=%s upload=%s "
+             "wait_ms=%d infer_ms=%s upload_ms=%s total_ms=%d esp_score=%s esp_persons=%s",
+             frame.frame_id, frame.device_id, entry["verdict"], lower(entry.get("has_helmet")),
+             lower(entry.get("has_vest")), entry.get("persons"), entry["upload"], entry["wait_ms"],
+             entry.get("infer_ms"), entry.get("upload_ms"), entry["total_ms"], frame.person_score, frame.person_count)
     return entry
 
 
@@ -155,7 +167,8 @@ async def worker(client: httpx.AsyncClient) -> None:
 async def lifespan(app: FastAPI):
     async with httpx.AsyncClient() as client:
         task = asyncio.create_task(worker(client))
-        log.info("시작: inference=%s uploader=%s 대기 줄 %d", INFERENCE_URL, UPLOADER_URL, QUEUE_MAX)
+        log.info("시작 commit=%s inference=%s uploader=%s queue_max=%d token=%s", os.environ.get("COMMIT") or "unknown",
+                 INFERENCE_URL, UPLOADER_URL, QUEUE_MAX, "설정됨" if GATEWAY_TOKEN else "없음")
         yield
         task.cancel()
 
@@ -213,4 +226,4 @@ async def frame(request: Request):
 
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=PORT, workers=1, log_level="warning")
+    uvicorn.run(app, host="0.0.0.0", port=PORT, workers=1, log_config=None, access_log=False)
