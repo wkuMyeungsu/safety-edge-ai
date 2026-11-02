@@ -23,6 +23,39 @@ python pi/models/verify_onnx.py pi/models/ppe_yolov8.onnx --sha256 0471240ce41e8
 
 ## 기존 후보 재현
 
+### 선택적 속도 최적화 후보: 576 입력
+
+[model-v1-576](https://github.com/wkuMyeungsu/safety-edge-ai/releases/tag/model-v1-576)은 기존 SafeSight 원본 가중치를 **576×576 FP32, opset 17**로 다시 내보낸 후보이다. 640 배포본과 `model-v1`은 보존한다. 서버는 모델의 정적 입력 크기를 읽으므로 추론 코드·판정 임계값·기대 정답 변경 없이 사용할 수 있다. 모델 파일만 자동으로 교체하지는 않는다.
+
+- 메타데이터: [model-v1-576.json](model-v1-576.json)
+- SHA256: `85533d8ef50e65435e5b7d9dfb7d87f5f0aa604469ffe222a471ae17648bd2f2`
+- 입력 `[1, 3, 576, 576]`, 출력 `[1, 23, 6804]`, 44,715,015 bytes. 입력 픽셀 수는 19% 줄지만 가중치 파일 크기는 거의 같다.
+- 원본 PyTorch 대비 영 입력·고정 난수 입력 수치 비교 통과(`rtol=atol=0.001`). 576 모델의 실제 HTTP 테스트는 20개 통과, 1개 건너뜀(모델 없음 503 검사)이다.
+
+```bash
+mkdir -p pi/models/optimized-576
+curl -fL https://github.com/wkuMyeungsu/safety-edge-ai/releases/download/model-v1-576/ppe_yolov8.onnx \
+  -o pi/models/optimized-576/ppe_yolov8.onnx
+python pi/models/verify_onnx.py pi/models/optimized-576/ppe_yolov8.onnx \
+  --sha256 85533d8ef50e65435e5b7d9dfb7d87f5f0aa604469ffe222a471ae17648bd2f2
+```
+
+재변환 명령은 `export_onnx.py --source safesight --weights <검증한 원본.pt> --imgsz 576 --output <새 파일.onnx>`이다. Windows PC에서 같은 3개 스레드·spinning 활성 상태로 크기를 순차 비교한 [원본 결과](reports/input-size-comparison-2026-11-02-pc.json)는 다음과 같다. 코드 커밋은 `b0db731824cd6caed747ed42e39194a4c876fa4b`, 사진 4종 각각 예열 1회와 측정 3회다.
+
+| 입력 | 기존 사진 기대 판정 | 추론 중앙값 (Windows PC) |
+|---|---|---|
+| 640 | 모두 일치 | 201 ms |
+| 608 | 모두 일치 | 194 ms |
+| 576 | 모두 일치 — 선택 | 180.5 ms |
+| 544 | 착용 사진의 조끼 누락 — 제외 | 153 ms |
+| 512·448·384·320 | 같은 착용 사진 판정 실패 — 제외 | 별도 초기 비교 원본에 기록 |
+
+576은 검사한 크기 중 가장 작은 통과 후보이며 이 PC 비교에서 중앙값이 약 10.2% 줄었다. 사진의 `pass`/`fail`/`no_person` 및 안전모·조끼 판정은 유지되지만 검출 점수·좌표·부가 클래스는 달라질 수 있다. 사진 4종의 회귀 검사는 전체 현장 정확도의 동등성을 보장하지 않으며, 실제 Pi 속도·정확도 검증은 별도다. 기존 CI는 계속 `model-v1` 640 모델을 사용한다.
+
+576 컨테이너 측정에는 아래 도구의 `--model pi/models/optimized-576/ppe_yolov8.onnx --manifest pi/models/model-v1-576.json`을 지정한다. 런타임 기본값 `ORT_THREADS=3`, `ORT_SPINNING=1`은 유지한다.
+
+## 기존 640 후보 재현
+
 기존 문서의 [Hansung-Cho/yolov8-ppe-detection](https://huggingface.co/Hansung-Cho/yolov8-ppe-detection)을 같은 가중치로 검증한다. 현장 모델 채택과 Pi 성능 측정은 별도다.
 
 | 항목 | 고정값 |
