@@ -393,231 +393,240 @@ section.block > h3 { margin-top: 8px; }
 <header>
   <div class="tape" aria-hidden="true"></div>
   <h1>협업 방법</h1>
-  <p class="lede">팀원이 코드를 고치고, 실제 Pi에서 시험하고, dev에 합치는 방법을 정리한 문서다. 시스템이 어떻게 생겼는지는 <a href="architecture.html">architecture.html</a>에서 본다.</p>
+  <p class="lede">개발, 원격 테스트, Pi 배포, 협업 규칙을 정리한 문서. 시스템 구조는 <a href="architecture.html">architecture.html</a> 참고.</p>
 </header>
 
-<!-- ============ 1. 개발 순서 ============ -->
+<!-- ============ 1. 개발 절차 ============ -->
 <section class="block" aria-labelledby="h-loop">
   <div class="eyebrow">1</div>
-  <h2 id="h-loop">개발 순서</h2>
+  <h2 id="h-loop">개발 절차</h2>
   <div class="steps" role="list">
-    <div class="step" role="listitem"><span class="no">01</span><b>브랜치 만들기</b><span>dev에서 새 브랜치를 만든다</span></div>
+    <div class="step" role="listitem"><span class="no">01</span><b>브랜치 생성</b><span>dev 기준</span></div>
     <span class="arr" aria-hidden="true">→</span>
-    <div class="step opt" role="listitem"><span class="no">02 · 선택</span><b>Pi에서 시험</b><span>필요하면 실제 Pi에 올려 본다 (2·3절)</span></div>
+    <div class="step opt" role="listitem"><span class="no">02 · 선택</span><b>Pi 테스트</b><span>2·3절</span></div>
     <span class="arr" aria-hidden="true">→</span>
-    <div class="step" role="listitem"><span class="no">03</span><b>PR 올리기</b><span>dev로 PR을 올린다</span></div>
+    <div class="step" role="listitem"><span class="no">03</span><b>PR 생성</b><span>대상 브랜치 dev</span></div>
     <span class="arr" aria-hidden="true">→</span>
-    <div class="step hi" role="listitem"><span class="no">04</span><b>CI 통과</b><span>ci-ok가 초록불이 될 때까지 기다린다</span></div>
+    <div class="step hi" role="listitem"><span class="no">04</span><b>CI 통과</b><span>ci-ok 성공</span></div>
     <span class="arr" aria-hidden="true">→</span>
-    <div class="step" role="listitem"><span class="no">05</span><b>병합</b><span>merge commit으로 합친다</span></div>
+    <div class="step" role="listitem"><span class="no">05</span><b>병합</b><span>merge commit</span></div>
   </div>
   <ul class="note-list">
-    <li>CI가 실패하면 테스트를 끄지 않는다. 실패한 원인을 고친다.</li>
-    <li>병합은 한 번에 하나씩 한다. 앞 PR의 CI가 끝난 뒤에 다음 PR을 병합한다.</li>
+    <li>CI 실패 시 테스트 비활성화 금지. 원인 수정 후 재검사.</li>
+    <li>병합은 한 건씩 진행. 앞 PR의 CI 완료 후 다음 PR 병합.</li>
   </ul>
 </section>
 
-<!-- ============ 2. 실제 Pi로 테스트 ============ -->
+<!-- ============ 2. 원격 테스트 환경 ============ -->
 <section class="block" aria-labelledby="h-funnel">
   <div class="eyebrow">2</div>
-  <h2 id="h-funnel">어디서든 실제 Pi로 테스트하기 (Tailscale Funnel)</h2>
-  <p>팀원 누구나 자기 자리에서 실제 Pi로 사진을 보내 테스트할 수 있게 하려고 Tailscale Funnel을 쓴다.</p>
-  <div class="steps" role="list">
-    <div class="step" role="listitem"><span class="no">문제</span><b>Pi는 한 대</b><span>현장 LAN 안에만 있다</span></div>
-    <span class="arr" aria-hidden="true">→</span>
-    <div class="step" role="listitem"><span class="no">문제</span><b>팀원은 외부 네트워크</b><span>각자 자리에서는 Pi에 닿지 않는다</span></div>
-    <span class="arr" aria-hidden="true">→</span>
-    <div class="step hi" role="listitem"><span class="no">해결</span><b>Tailscale Funnel</b><span>gateway만 인터넷 주소로 연다</span></div>
-    <span class="arr" aria-hidden="true">→</span>
-    <div class="step" role="listitem"><span class="no">결과</span><b>어디서든 테스트</b><span>실제 Pi로 사진을 보낸다</span></div>
-    <span class="arr" aria-hidden="true">→</span>
-    <div class="step" role="listitem"><span class="no">보완</span><b>팀 토큰</b><span>공개 주소라서 팀만 받는다</span></div>
-  </div>
+  <h2 id="h-funnel">원격 테스트 환경 (Tailscale Funnel)</h2>
 
-  <h3>연결 구조</h3>
+  <h3>목적</h3>
+  <ul class="note-list">
+    <li>Pi는 현장 LAN에 1대만 설치되어 있어, 외부 네트워크의 팀원은 Pi에 직접 접근할 수 없음.</li>
+    <li>Tailscale Funnel로 gateway를 인터넷에 공개하여, 팀원이 위치와 관계없이 실제 Pi로 테스트할 수 있게 함.</li>
+    <li>외부에서 보낸 사진도 현장 사진과 동일하게 판정·저장되므로, 실제 시스템과 같은 조건으로 검증 가능.</li>
+  </ul>
+
+  <h3>구성</h3>
   <div class="routes">
     <div class="route">
       <div class="box"><b>현장 ESP32</b><span>Pi와 같은 LAN</span></div>
-      <div class="via"><b>LAN</b><div class="line"></div><span>토큰 없음</span></div>
-      <div class="box pi"><b>Pi gateway</b><span>사진을 받는다</span></div>
+      <div class="via"><b>LAN (HTTP)</b><div class="line"></div><span>인증 없음</span></div>
+      <div class="box pi"><b>Pi gateway :8001</b><span>판정 → 저장</span></div>
     </div>
     <div class="route">
-      <div class="box"><b>외부 ESP32, PC</b><span>다른 네트워크</span></div>
-      <div class="via hi"><b>Tailscale Funnel (HTTPS)</b><div class="line"></div><span>팀 토큰 필요</span></div>
-      <div class="box pi"><b>Pi gateway</b><span>같은 처리를 거친다</span></div>
+      <div class="box"><b>외부 ESP32, PC</b><span>외부 네트워크</span></div>
+      <div class="via hi"><b>Tailscale Funnel (HTTPS)</b><div class="line"></div><span>팀 토큰 인증</span></div>
+      <div class="box pi"><b>Pi gateway :8001</b><span>판정 → 저장</span></div>
     </div>
   </div>
-  <p>외부에서 보낸 사진도 현장 사진과 똑같이 판정되고, 위반이면 Supabase와 웹까지 간다. 그래서 실제 시스템 그대로 테스트할 수 있다.</p>
-
-  <h3>Funnel을 고른 이유</h3>
-  <ul class="note-list">
-    <li>도메인이 없어도 고정 HTTPS 주소가 생긴다.</li>
-    <li>공유기 포트포워딩을 하지 않아도 된다.</li>
-    <li>gateway만 열리고, SSH 같은 다른 접속은 계속 막혀 있다.</li>
-    <li>다른 방법은 쓰지 않았다. 포트포워딩은 공유기 포트가 노출되고, Cloudflare Tunnel은 도메인이 필요하고, ngrok 무료판은 월 1GB 제한이 있다.</li>
-  </ul>
-
-  <h3>토큰이 필요한 이유</h3>
-  <ul class="note-list">
-    <li>Funnel 주소는 인터넷에 공개되어 있다. 주소만 알면 누구나 사진을 보낼 수 있다.</li>
-    <li>모르는 사람이 보낸 사진도 판정된다. 위반이면 Supabase와 웹에 가짜 기록이 남는다.</li>
-    <li>사진이 많이 들어오면 대기 줄이 차서 팀 ESP32의 사진이 <code>503</code>으로 거절된다.</li>
-    <li>그래서 외부에서 온 요청은 팀 토큰이 있을 때만 받는다. 토큰이 없거나 틀리면 <code>401</code>이다.</li>
-    <li>같은 LAN은 그 네트워크 안의 장치만 접근할 수 있어서 토큰을 검사하지 않는다.</li>
-  </ul>
-
-  <h3>사진 보내기</h3>
   <div class="table-wrap">
     <table>
-      <thead><tr><th>보내는 곳</th><th>주소</th><th>토큰</th></tr></thead>
+      <thead><tr><th>항목</th><th>내용</th></tr></thead>
       <tbody>
-        <tr><td>Pi와 같은 LAN</td><td><code>http://&lt;Pi IP&gt;:8001/frame</code></td><td>필요 없음</td></tr>
-        <tr><td>외부 네트워크</td><td><code>https://&lt;Pi 이름&gt;.&lt;tailnet&gt;.ts.net/frame</code></td><td><code>X-Device-Token</code> 헤더에 넣는다</td></tr>
+        <tr><td>공개 대상</td><td>gateway(8001)만 공개</td></tr>
+        <tr><td>비공개 대상</td><td>SSH, inference, uploader 등 그 밖의 모든 접속</td></tr>
+        <tr><td>인증</td><td>외부 요청은 <code>X-Device-Token</code> 필수, LAN 요청은 인증 없음</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>선정 사유</h3>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>방식</th><th>판단</th><th>사유</th></tr></thead>
+      <tbody>
+        <tr><td><b>Tailscale Funnel</b></td><td><b>채택</b></td><td>도메인 없이 고정 HTTPS 주소 제공, 공유기 설정 불필요, gateway만 공개 가능</td></tr>
+        <tr><td>공유기 포트포워딩</td><td>제외</td><td>공유기 포트가 인터넷에 노출됨</td></tr>
+        <tr><td>Cloudflare Tunnel</td><td>제외</td><td>도메인 필요</td></tr>
+        <tr><td>ngrok 무료</td><td>제외</td><td>월 1GB 전송 제한</td></tr>
+        <tr><td>팀원 SSH 계정</td><td>제외</td><td>Pi 전체 권한 부여</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>접근 제어 (토큰)</h3>
+  <ul class="note-list">
+    <li>Funnel 주소는 인터넷에 공개되어 있어, 주소를 아는 누구나 요청할 수 있음.</li>
+    <li>인증이 없으면 외부인의 사진이 판정되어 Supabase와 웹에 잘못된 위반 기록이 남을 수 있음.</li>
+    <li>대량 요청 시 대기 줄이 가득 차서 팀 장치의 사진이 <code>503</code>으로 거절될 수 있음.</li>
+    <li>이를 막기 위해 외부 요청은 팀 공용 토큰이 일치할 때만 처리하고, 불일치 시 <code>401</code>을 반환함.</li>
+    <li>LAN 요청은 같은 네트워크의 장치로 한정되므로 토큰 검사를 생략함.</li>
+  </ul>
+
+  <h3>사용 방법</h3>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>접속 위치</th><th>주소</th><th>필수 헤더</th></tr></thead>
+      <tbody>
+        <tr><td>Pi와 같은 LAN</td><td><code>http://&lt;Pi IP&gt;:8001/frame</code></td><td><code>X-Device-Id</code></td></tr>
+        <tr><td>외부 네트워크</td><td><code>https://&lt;Pi 이름&gt;.&lt;tailnet&gt;.ts.net/frame</code></td><td><code>X-Device-Id</code>, <code>X-Device-Token</code></td></tr>
       </tbody>
     </table>
   </div>
 <pre>curl -H "X-Device-Id: test-&lt;이름&gt;" -H "X-Device-Token: &lt;토큰&gt;" -H "Content-Type: image/jpeg" \
      --data-binary @사진.jpg https://&lt;Pi 이름&gt;.&lt;tailnet&gt;.ts.net/frame</pre>
   <ul class="note-list">
-    <li>성공하면 <code>202</code>와 함께 사진 번호 <code>frame</code>이 돌아온다.</li>
-    <li>장치 ID는 ESP32면 <code>cam-&lt;이름&gt;</code>, 시험용이면 <code>test-&lt;아무거나&gt;</code>로 쓴다.</li>
-    <li>토큰은 Pi 관리자에게 개인 메시지로 받는다. 저장소에는 올리지 않는다.</li>
-    <li>실제 주소와 응답 형식은 <a href="api-manual.html">api-manual.html</a>에 있다.</li>
+    <li>정상 접수 시 <code>202</code>와 사진 번호 <code>frame</code> 반환.</li>
+    <li>장치 ID: ESP32는 <code>cam-&lt;이름&gt;</code>, 테스트는 <code>test-&lt;임의 값&gt;</code>.</li>
+    <li>토큰은 Pi 관리자에게 개별 전달받으며, 저장소에 커밋하지 않음.</li>
+    <li>실제 주소와 응답 형식: <a href="api-manual.html">api-manual.html</a></li>
   </ul>
 </section>
 
-<!-- ============ 3. 코드를 Pi에 올리기 ============ -->
+<!-- ============ 3. Pi 배포 ============ -->
 <section class="block" aria-labelledby="h-deploy">
   <div class="eyebrow">3</div>
-  <h2 id="h-deploy">내 코드를 Pi에 올리기 (deploy-pi)</h2>
-  <p>Funnel로는 사진만 보낼 수 있다. 내가 고친 코드를 Pi에서 돌려 보려면 deploy-pi를 쓴다.</p>
-  <div class="steps" role="list">
-    <div class="step" role="listitem"><span class="no">문제</span><b>코드는 못 바꾼다</b><span>Funnel은 사진만 받는다</span></div>
-    <span class="arr" aria-hidden="true">→</span>
-    <div class="step" role="listitem"><span class="no">문제</span><b>SSH는 열지 않는다</b><span>Pi 전체 권한을 주게 된다</span></div>
-    <span class="arr" aria-hidden="true">→</span>
-    <div class="step hi" role="listitem"><span class="no">해결</span><b>deploy-pi</b><span>Pi 안의 runner가 GitHub에서 작업을 받아 온다</span></div>
-    <span class="arr" aria-hidden="true">→</span>
-    <div class="step" role="listitem"><span class="no">결과</span><b>버튼으로 배포</b><span>누구나 내 브랜치를 Pi에 올린다</span></div>
-  </div>
-  <p>GitHub에서 Actions → <code>deploy-pi</code> → Run workflow를 누른다. 올릴 브랜치를 고르고, 아래 셋 중 하나를 고른다.</p>
+  <h2 id="h-deploy">Pi 배포 (deploy-pi)</h2>
+
+  <h3>목적</h3>
+  <ul class="note-list">
+    <li>Funnel은 사진 수신만 허용하므로, 수정한 코드를 Pi에 반영하는 별도 경로가 필요함.</li>
+    <li>SSH는 Pi 전체 권한을 부여하게 되어 사용하지 않음.</li>
+    <li>Pi에 설치한 GitHub Actions runner가 GitHub에서 작업을 받아 실행하는 방식으로, 새 포트를 열지 않고 배포함.</li>
+  </ul>
+
+  <h3>사용 방법</h3>
+  <p>GitHub → Actions → <code>deploy-pi</code> → Run workflow에서 브랜치와 동작을 선택.</p>
   <div class="table-wrap">
     <table>
-      <thead><tr><th>고르는 것</th><th>하는 일</th></tr></thead>
+      <thead><tr><th>동작</th><th>내용</th></tr></thead>
       <tbody>
-        <tr><td><code>deploy</code></td><td>내 브랜치를 Pi에 올린다. 그 뒤 30분 동안은 다른 사람이 올리지 못한다.</td></tr>
-        <tr><td><code>status</code></td><td>아무것도 바꾸지 않고, 지금 Pi 상태와 최근 로그만 본다.</td></tr>
-        <tr><td><code>release</code></td><td>시험이 끝났다고 알린다. 다른 사람이 다시 올릴 수 있게 된다.</td></tr>
+        <tr><td><code>deploy</code></td><td>선택한 브랜치를 Pi에 배포. 이후 30분간 다른 사용자의 배포 제한</td></tr>
+        <tr><td><code>status</code></td><td>변경 없이 현재 커밋, 사용 중인 사람, 컨테이너 상태, 최근 로그 조회</td></tr>
+        <tr><td><code>release</code></td><td>사용 표시 해제. 다른 사용자 배포 가능</td></tr>
       </tbody>
     </table>
   </div>
   <ul class="note-list">
-    <li>올린 뒤에는 2절의 방법으로 사진을 보내 테스트한다.</li>
-    <li>다른 사람이 시험 중이면 바로 실패한다. 실행 화면 맨 위에 누가 쓰고 있는지 나온다.</li>
-    <li>시험이 끝나면 <code>release</code>를 누르고, <code>dev</code>를 다시 올려 둔다.</li>
-    <li>모델 파일과 <code>.env</code>는 이 버튼으로 바뀌지 않는다. 바꿀 일이 있으면 Pi 관리자에게 요청한다.</li>
+    <li>배포 후 테스트는 2절의 방법으로 진행.</li>
+    <li>다른 사용자가 사용 중이면 즉시 실패하며, 실행 화면 상단 Summary에 사용자와 해제 시각 표시.</li>
+    <li>테스트 종료 후 <code>release</code> 실행, <code>dev</code> 재배포.</li>
+    <li>모델 파일과 <code>.env</code>는 배포 대상이 아님. 변경이 필요하면 Pi 관리자에게 요청.</li>
   </ul>
 </section>
 
-<!-- ============ 4. 문제 찾기 ============ -->
+<!-- ============ 4. 장애 추적 ============ -->
 <section class="block" aria-labelledby="h-trace">
   <div class="eyebrow">4</div>
-  <h2 id="h-trace">사진이 어디서 멈췄는지 찾기</h2>
-  <p>사진마다 번호가 붙는다. 이 번호로 사진 한 장이 어디까지 갔는지 따라간다.</p>
+  <h2 id="h-trace">장애 추적</h2>
+  <p>사진마다 부여되는 번호(<code>frame</code>)로 처리 경로를 추적.</p>
   <div class="steps" role="list">
-    <div class="step hi" role="listitem"><span class="no">1</span><b>번호 확인</b><span>202 응답의 frame 값</span></div>
+    <div class="step hi" role="listitem"><span class="no">1</span><b>사진 번호</b><span>202 응답의 frame</span></div>
     <span class="arr" aria-hidden="true">→</span>
     <div class="step" role="listitem"><span class="no">2</span><b>판정 결과</b><span>gateway /recent</span></div>
     <span class="arr" aria-hidden="true">→</span>
     <div class="step" role="listitem"><span class="no">3</span><b>Pi 로그</b><span>grep frame=번호</span></div>
     <span class="arr" aria-hidden="true">→</span>
-    <div class="step" role="listitem"><span class="no">4</span><b>Supabase 행</b><span>로그의 log_id로 찾는다</span></div>
+    <div class="step" role="listitem"><span class="no">4</span><b>Supabase</b><span>log_id로 행 조회</span></div>
   </div>
   <ul class="note-list">
-    <li>Pi 로그는 <code>deploy-pi</code>의 <code>status</code>로도 볼 수 있다.</li>
-    <li>웹에 위반이 안 보이면 <code>cloud/README.md</code>의 "로그 보는 곳"을 따라 한다.</li>
+    <li>Pi 로그는 <code>deploy-pi</code>의 <code>status</code>로도 조회 가능.</li>
+    <li>웹에 위반이 표시되지 않는 경우: <code>cloud/README.md</code> "로그 보는 곳" 참고.</li>
   </ul>
 </section>
 
 <!-- ============ 5. 규칙 ============ -->
 <section class="block" aria-labelledby="h-rules">
   <div class="eyebrow">5</div>
-  <h2 id="h-rules">규칙</h2>
+  <h2 id="h-rules">협업 규칙</h2>
   <div class="rules">
     <div class="rule">
       <h3>담당</h3>
       <ul>
-        <li>내가 맡은 폴더만 고친다.</li>
-        <li>다른 사람 폴더를 고쳐야 하면 담당자에게 먼저 말한다.</li>
-        <li>누가 어디를 맡는지는 README의 "폴더별 담당" 표에 있다.</li>
+        <li>본인 담당 폴더만 수정</li>
+        <li>타 담당 폴더 수정이 필요하면 담당자와 협의</li>
+        <li>담당 범위: README "폴더별 담당"</li>
       </ul>
     </div>
     <div class="rule">
       <h3>브랜치</h3>
       <ul>
-        <li>이름은 <code>태그/파트/기능</code>으로 짓는다.</li>
+        <li>형식: <code>태그/파트/기능</code></li>
         <li>예: <code>feature/pi/gateway-queue</code></li>
-        <li>main과 dev에는 직접 push하지 않는다.</li>
+        <li>main, dev 직접 push 금지</li>
       </ul>
     </div>
     <div class="rule">
       <h3>커밋</h3>
       <ul>
-        <li>메시지는 <code>타입(파트): 요약</code>으로 쓴다.</li>
+        <li>형식: <code>타입(파트): 요약</code></li>
         <li>예: <code>feat(pi): 대기 줄 추가</code></li>
-        <li>계약을 바꾸면 메시지에 <code>[contract]</code>를 붙인다.</li>
+        <li>계약 변경 시 <code>[contract]</code> 표기</li>
       </ul>
     </div>
     <div class="rule">
       <h3>CI</h3>
       <ul>
-        <li>PR을 올리면 바뀐 파트만 검사한다.</li>
-        <li>ci-ok가 초록불이어야 병합할 수 있다.</li>
-        <li>계약 문서를 바꾸면 모든 파트를 검사한다.</li>
+        <li>PR 생성 시 변경된 파트만 검사</li>
+        <li>ci-ok 성공 시 병합 가능</li>
+        <li>계약 문서 변경 시 전체 파트 검사</li>
       </ul>
     </div>
     <div class="rule">
       <h3>테스트</h3>
       <ul>
-        <li><code>tests/파트/</code> 폴더에 <code>test_*.py</code>로 넣는다.</li>
-        <li>서비스 코드를 불러오지 말고 HTTP로 요청한다.</li>
-        <li>모델이 필요한 테스트에는 <code>model</code> 표시를 붙인다.</li>
+        <li>위치: <code>tests/파트/test_*.py</code></li>
+        <li>서비스 코드 import 금지, HTTP 요청으로 검증</li>
+        <li>마커: <code>model</code>, <code>supabase</code>, <code>pi</code></li>
       </ul>
     </div>
     <div class="rule">
       <h3>계약</h3>
       <ul>
-        <li>파트 사이 데이터 형식은 구현 전에 <code>docs/contracts/</code>에 적는다.</li>
-        <li>보내는 쪽과 받는 쪽이 둘 다 확인한다.</li>
-        <li>배포는 받는 쪽부터 한다.</li>
+        <li>구현 전 <code>docs/contracts/</code>에 형식 정의</li>
+        <li>송신·수신 담당자 모두 확인</li>
+        <li>배포는 수신 측부터 진행</li>
       </ul>
     </div>
     <div class="rule">
-      <h3>올리지 않는 파일</h3>
+      <h3>커밋 제외 파일</h3>
       <ul>
         <li>비밀값: <code>.env</code>, <code>config.h</code>, 토큰</li>
-        <li>큰 파일: 모델 가중치, 영상</li>
-        <li>실행 중 생기는 것: <code>pi/buffer/</code>, 로그 파일</li>
+        <li>대용량: 모델 가중치, 영상</li>
+        <li>실행 산출물: <code>pi/buffer/</code>, 로그 파일</li>
       </ul>
     </div>
     <div class="rule">
       <h3>기록</h3>
       <ul>
-        <li>측정한 숫자에는 어느 커밋에서 쟀는지 같이 적는다.</li>
-        <li>되돌리기 어려운 결정은 <a href="decisions.md">decisions.md</a>에 남긴다.</li>
+        <li>측정값은 측정 커밋과 함께 기록</li>
+        <li>주요 결정은 <a href="decisions.md">decisions.md</a>에 기록</li>
       </ul>
     </div>
     <div class="rule">
-      <h3>내 PC에서 테스트</h3>
+      <h3>로컬 테스트</h3>
       <ul>
-        <li><code>pi</code> 폴더에서 CI용 설정으로 컨테이너를 띄운다.</li>
-        <li>저장소 루트에서 <code>pytest tests/pi tests/e2e</code>를 돌린다.</li>
-        <li>자세한 명령은 <code>tests/README.md</code>에 있다.</li>
+        <li><code>pi</code> 폴더에서 CI 설정으로 컨테이너 실행</li>
+        <li>저장소 루트에서 <code>pytest tests/pi tests/e2e</code> 실행</li>
+        <li>상세 명령: <code>tests/README.md</code></li>
       </ul>
     </div>
   </div>
 </section>
 
-<footer>이 문서의 원본은 <code>CLAUDE.md</code>, <code>README.md</code>, <code>pi/README.md</code>다. 규칙이 바뀌면 같이 고친다.</footer>
+<footer>원본 문서: <code>CLAUDE.md</code>, <code>README.md</code>, <code>pi/README.md</code>. 규칙 변경 시 함께 수정.</footer>
 
 </div>
