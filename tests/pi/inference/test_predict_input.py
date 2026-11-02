@@ -1,6 +1,7 @@
 """POST /predict의 입력 검사와 오류 코드 (docs/contracts/inference.md '오류'). 모델 없이도 돈다."""
 
 import base64
+from pathlib import Path
 
 import pytest
 import requests
@@ -36,3 +37,18 @@ def test_without_model_is_503(inference_url):
     r = predict(inference_url, TINY_JPEG)
     assert r.status_code == 503
     assert "모델" in r.json()["detail"]
+
+
+@pytest.mark.model
+@pytest.mark.parametrize("name,width,height", [
+    ("thin_landscape.jpg", 4096, 1),
+    ("thin_portrait.jpg", 1, 4096),
+])
+def test_extreme_aspect_ratio_is_processed(inference_url, name, width, height):
+    photo = (Path(__file__).parent / "images" / name).read_bytes()
+    r = predict(inference_url, photo)
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body["image"] == {"width": width, "height": height}
+    assert body["verdict"] == "no_person"
+    assert body["persons"] == 0
