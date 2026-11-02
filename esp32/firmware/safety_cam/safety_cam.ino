@@ -12,7 +12,7 @@
 #include "config.h"
 
 // 펌웨어를 바꿀 때마다 올린다 (CLAUDE.md 6절)
-#define FW_VERSION "0.3.1"
+#define FW_VERSION "0.3.2"
 
 // ================= 설정 =================
 const char* PERSON_LABEL           = "hum";  // 모델에서 사람을 뜻하는 라벨 (Edge Impulse 라벨과 같아야 한다)

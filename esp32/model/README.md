@@ -5,9 +5,10 @@
 | Edge Impulse 프로젝트 | https://studio.edgeimpulse.com/public/121370/latest (사용 여부 미정) |
 | 배포 형식 | Arduino library |
 | 모델 종류 | 물체 감지 FOMO, 라벨 `hum` 하나 (사람). 모델 자체 threshold 0.5 |
-| 입력 크기 | 64×64 RGB, resize mode fit longest (화면 전체를 줄이고 위아래를 검게 채움), int8, EON |
-| 라이브러리 | `Person_detection_FOMO_3_inferencing` 1.0.6 (`#include <Person_detection_FOMO_3_inferencing.h>`) |
+| 입력 크기 | 48×48 RGB, resize mode fit longest (화면 전체를 줄이고 위아래를 검게 채움), int8, EON. FOMO 격자 6×6 |
+| 라이브러리 | `Person_detection_FOMO_3_inferencing` 1.0.7 (`#include <Person_detection_FOMO_3_inferencing.h>`) |
 | 학습 데이터 | 1.0.6: 사람이 없는 배경 이미지를 추가해 다시 학습 (1.0.5에서 사람이 없는데 감지되는 오탐이 있었다) |
+| 입력 크기 변경 | 1.0.7: 64×64 → 48×48. ESP-NN을 끈 상태에서 64×64 추론이 약 1초라, 연산량을 약 0.56배로 줄인다. 대신 멀리 있는 사람을 놓칠 수 있다 |
 
 ## 받는 법
 
