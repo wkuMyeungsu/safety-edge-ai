@@ -10,5 +10,6 @@
 ## 받는 법
 
 1. Edge Impulse 프로젝트에서 Deployment → Arduino library로 내려받는다.
-2. Arduino IDE에서 Sketch → Include Library → Add .ZIP Library로 추가한다.
-3. 위 표의 입력 크기와 버전 칸을 채운다.
+2. 받은 zip을 이 폴더(`esp32/model/`)에 넣고 커밋한다. CI는 이 폴더의 `*.zip`을 설치해 펌웨어와 함께 컴파일하고, zip이 그대로면 컴파일 결과를 캐시에서 쓴다.
+3. 내 PC에서는 Arduino IDE의 Sketch → Include Library → Add .ZIP Library로 같은 zip을 추가한다.
+4. 위 표의 입력 크기와 버전 칸을 채운다.

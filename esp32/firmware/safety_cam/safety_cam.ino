@@ -2,8 +2,12 @@
 #include <WiFi.h>
 #include "config.h"
 
+// 펌웨어를 바꿀 때마다 올린다 (CLAUDE.md 6절)
+#define FW_VERSION "0.1.0"
+
 void setup() {
   Serial.begin(115200);
+  Serial.printf("FW_VERSION %s\n", FW_VERSION);
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);

@@ -49,6 +49,16 @@ docker compose down            # 종료
 - 지금 `pi/*`의 서버는 `/health`만 답하는 뼈대다. 담당자가 자기 폴더의 `main.py`·`Dockerfile`·`requirements.txt`를 채운다.
 - 외부에 열리는 포트는 gateway의 `8001`뿐이다. 컨테이너끼리는 서비스 이름으로 부른다 (`http://inference:8003`).
 
+## 테스트 · CI
+
+- 테스트는 `tests/<파트>/`에 `test_*.py`로 추가한다. 규칙은 `tests/README.md`.
+- PR을 올리면 GitHub Actions(`.github/workflows/ci.yml`)가 **바뀐 파트만** 검사한다.
+  - `pi/` → arm64 러너에서 컨테이너 빌드·기동 후 `tests/pi`
+  - `esp32/` → 펌웨어 컴파일 후 `tests/esp32`
+  - `cloud/` → 로컬 Supabase에 `schema.sql` 적용 후 `tests/cloud`
+  - `docs/contracts/`·`tests/contracts/`가 바뀌거나 dev → main PR이면 전부
+- 마지막 `ci-ok`가 초록불이어야 dev·main에 병합된다.
+
 ## 브랜치
 
 - `main`: 최종본. `dev`: 통합. 둘 다 직접 push하지 않고 PR로만 합친다.

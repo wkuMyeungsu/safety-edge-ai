@@ -1,0 +1,8 @@
+# CI와 PC 테스트용. 내부 서비스 포트를 호스트에 열어 tests/pi/ 가 직접 부를 수 있게 한다.
+# 사용: docker compose -f docker-compose.yml -f docker-compose.ci.yml up -d --wait
+# Pi 운영에서는 쓰지 않는다 (외부 공개 포트는 gateway 8001뿐).
+services:
+  inference:
+    ports: ["8003:8003"]
+  uploader:
+    ports: ["8004:8004"]

@@ -8,6 +8,7 @@ x-health: &health
 services:
   gateway:
     build: ./gateway
+    image: safety-edge-ai/gateway:${TAG:-dev}
     environment:
       SERVICE_NAME: gateway
       PORT: "8001"
@@ -23,13 +24,13 @@ services:
 
   inference:
     build: ./inference
+    image: safety-edge-ai/inference:${TAG:-dev}
     environment:
       SERVICE_NAME: inference
       PORT: "8003"
       MODEL_PATH: /models/ppe_yolov8.onnx
     volumes: ["./models:/models:ro"]
     mem_limit: 1g
-    cpus: "3"
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request;urllib.request.urlopen('http://localhost:8003/health')"]
@@ -37,6 +38,7 @@ services:
 
   uploader:
     build: ./uploader
+    image: safety-edge-ai/uploader:${TAG:-dev}
     environment:
       SERVICE_NAME: uploader
       PORT: "8004"
