@@ -32,7 +32,10 @@ def main():
     source.add_argument("--weights", type=Path, help="같은 원본 best.pt의 로컬 경로 (SHA256 필수 확인)")
     parser.add_argument("--source", choices=SOURCES, default="hansung", help="검증할 원본 후보 (기본 hansung)")
     parser.add_argument("--output", type=Path, default=HERE / "ppe_yolov8.onnx")
+    parser.add_argument("--imgsz", type=int, default=640, help="정적 입력 한 변 (320~640, 32의 배수)")
     args = parser.parse_args()
+    if not 320 <= args.imgsz <= 640 or args.imgsz % 32:
+        parser.error("imgsz는 320~640 사이의 32 배수여야 함")
     selected = SOURCES[args.source]
     source_url = f"https://huggingface.co/{selected['repo']}/resolve/{selected['revision']}/best.pt"
     output = args.output.resolve()
@@ -59,7 +62,7 @@ def main():
 
         torch.set_num_threads(3)
         model = YOLO(str(weights), task="detect")
-        exported = Path(model.export(format="onnx", imgsz=640, batch=1, dynamic=False, half=False,
+        exported = Path(model.export(format="onnx", imgsz=args.imgsz, batch=1, dynamic=False, half=False,
                                      simplify=False, nms=False, opset=17, device="cpu"))
         onnx.checker.check_model(str(exported))
         report = verify(exported)
@@ -71,8 +74,8 @@ def main():
         session = ort.InferenceSession(str(exported), options, providers=["CPUExecutionProvider"])
         rng = np.random.default_rng(0)
         errors = []
-        for blob in (np.zeros((1, 3, 640, 640), dtype=np.float32),
-                     rng.random((1, 3, 640, 640), dtype=np.float32)):
+        for blob in (np.zeros((1, 3, args.imgsz, args.imgsz), dtype=np.float32),
+                     rng.random((1, 3, args.imgsz, args.imgsz), dtype=np.float32)):
             with torch.inference_mode():
                 expected = reference(torch.from_numpy(blob))[0].numpy()
             actual = session.run(None, {session.get_inputs()[0].name: blob})[0]

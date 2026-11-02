@@ -48,6 +48,7 @@ pi/models/.venv/bin/python pi/models/export_onnx.py --source safesight --downloa
 Windows PowerShell에서는 `python3.12` 대신 `py -3.12`, `pi/models/.venv/bin/python` 대신 `.\pi\models\.venv\Scripts\python.exe`를 쓴다.
 
 - `--source safesight`가 검증용 배포 후보다. 기존 후보는 `--source hansung`으로 재현한다. 생략 시 기존 동작대로 hansung을 사용한다.
+- `--imgsz`는 320~640 사이의 32 배수이며 기본값은 640이다. 작은 입력도 별도 파일로 내보내며 PyTorch/ONNX 수치 비교는 지정한 크기로 수행한다. 사진별 기대 판정 검사를 통과하기 전에는 배포 후보로 선택하지 않는다.
 - 이미 받은 동일 원본은 `--weights <best.pt 경로>`로 지정한다. 선택한 `--source`의 해시와 맞아야 하며 `--download`와 함께 쓰지 않는다.
 - 원본 해시를 확인한 뒤 가중치를 불러온다. 정적 크기, 배치 1, FP32, NMS 제외, simplify 제외로 변환한다.
 - ONNX checker, 서버와 같은 클래스·입출력 검사, CPU 실행, NaN·점수 범위 검사, PyTorch 대비 출력 비교(영 입력·고정 난수 입력, `rtol=atol=0.001`)가 모두 통과해야 출력 파일을 만든다.
