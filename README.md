@@ -74,5 +74,12 @@ docker compose down            # 종료
 - 파트 이름은 고치는 폴더의 최상위 이름을 쓴다. `pi/uploader/`를 고치면 담당이 cloud여도 `feature/pi/<기능>`.
 - 여러 파트 폴더를 함께 바꾸면 파트 자리에 `common`을 쓴다. 예: `docs/common/contracts`
 - 작업 브랜치는 `dev`에서 만들고 `dev`로 PR을 올린다. 병합 후 삭제한다.
+  - GitHub의 브랜치는 PR이 병합되면 자동으로 지워진다 (저장소 설정).
+  - 내 PC의 브랜치는 직접 지운다:
+
+    ```bash
+    git switch dev && git pull --prune   # 최신 dev 받기, 지워진 원격 브랜치 정보 정리
+    git branch -d <병합된 브랜치>          # 병합되지 않았으면 지워지지 않는다 (안전)
+    ```
 - 커밋 메시지: `<타입>(<파트>): <요약>`. 예: `feat(pi): gateway 대기 줄 추가`
 - `.env`, `config.h`, 모델 가중치(`*.onnx` `*.pt`), 영상은 커밋하지 않는다.
