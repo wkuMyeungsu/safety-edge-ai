@@ -46,7 +46,8 @@ def benchmark(args):
     try:
         docker("create", "--name", container, "--platform", "linux/arm64",
                "--cpus", "3", "--memory", "1g", "--memory-swap", "1g",
-               "--publish", "127.0.0.1::8003", "--env", "ORT_THREADS=3",
+               "--publish", "127.0.0.1::8003", "--env", f"ORT_THREADS={args.ort_threads}",
+               *(["--env", f"ORT_SPINNING={args.ort_spinning}"] if args.ort_spinning is not None else []),
                "--env", "MODEL_PATH=/models/ppe_yolov8.onnx",
                "--mount", f"type=bind,source={args.model.resolve()},target=/models/ppe_yolov8.onnx,readonly",
                info["Id"])
@@ -115,7 +116,8 @@ print(json.dumps({
             "docker_server": json.loads(docker("version", "--format", "{{json .Server}}")),
             "limits": {"memory_bytes": details["HostConfig"]["Memory"],
                        "memory_swap_bytes": details["HostConfig"]["MemorySwap"],
-                       "nano_cpus": details["HostConfig"]["NanoCpus"], "ort_threads": 3},
+                       "nano_cpus": details["HostConfig"]["NanoCpus"], "ort_threads": args.ort_threads,
+                       "ort_spinning_override": args.ort_spinning},
             "memory_before": before, "memory_after": after,
             "memory_note": "cgroup v2 바이트 단위. memory.peak는 컨테이너 시작부터 모델 로드·해시 확인·추론·계측 보조 프로세스를 포함한 최대값. QEMU 실행 시 그 비용도 포함. memory.current는 순간값이며 Docker working set이나 모델 파일 크기와 다름. process_status는 PID 1의 /proc 값으로 QEMU 환경에서 네이티브 Pi RSS로 해석하지 않음.",
         }
@@ -137,6 +139,8 @@ def main():
     parser.add_argument("--manifest", type=Path, default=ROOT / "pi/models/model-v1.json")
     parser.add_argument("--repeats", type=int, default=5)
     parser.add_argument("--parallel", type=int, default=2)
+    parser.add_argument("--ort-threads", type=int, choices=(1, 2, 3), default=3)
+    parser.add_argument("--ort-spinning", choices=("0", "1"), help="생략 시 서버 기본값. 0=대기 중 CPU 회전 끄기, 1=켜기")
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     if not 1 <= args.repeats <= 100 or not 2 <= args.parallel <= 64:

@@ -27,6 +27,7 @@ SERVICE = os.environ.get("SERVICE_NAME", "inference")
 PORT = int(os.environ.get("PORT", "8003"))
 MODEL_PATH = Path(os.environ.get("MODEL_PATH", "/models/ppe_yolov8.onnx"))
 ORT_THREADS = int(os.environ.get("ORT_THREADS", "3"))
+ORT_SPINNING = os.environ.get("ORT_SPINNING", "1")
 CONF_THRES = float(os.environ.get("CONF_THRES", "0.4"))
 IOU_THRES = float(os.environ.get("IOU_THRES", "0.45"))
 MAX_BYTES = 2 * 1024 * 1024  # 계약: 최대 2MB
@@ -45,6 +46,10 @@ def load_model() -> None:
         options = ort.SessionOptions()
         options.intra_op_num_threads = ORT_THREADS
         options.inter_op_num_threads = 1
+        if ORT_SPINNING not in {"0", "1"}:
+            raise ValueError("ORT_SPINNING은 0 또는 1이어야 함")
+        options.add_session_config_entry("session.intra_op.allow_spinning", ORT_SPINNING)
+        options.add_session_config_entry("session.inter_op.allow_spinning", ORT_SPINNING)
         options.graph_optimization_level = ort.GraphOptimizationLevel.ORT_ENABLE_ALL
         session = ort.InferenceSession(str(MODEL_PATH), options, providers=["CPUExecutionProvider"])
         input_name, size, classes, categories = inspect_session(session)
