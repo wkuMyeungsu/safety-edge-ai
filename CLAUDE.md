@@ -6,6 +6,7 @@
 
 1. `README.md`: 파트·담당, 실행 방법, 브랜치 규칙
 2. `docs/architecture.html`: 장비·컨테이너 구조와 처리 순서
+   `docs/cooperation.html`: 원격 시험(Tailscale Funnel), 배포(deploy-pi), CI, 협업 방법을 사람이 읽기 좋게 모은 것
 3. `docs/contracts/`: 파트 사이에 주고받는 데이터 형식
 4. 작업할 파트의 `README.md` (`esp32/`, `pi/`, `cloud/`, `web/`)와 `tests/README.md`
 
