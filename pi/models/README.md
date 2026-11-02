@@ -98,6 +98,8 @@ python pi/models/run_http_smoke.py --url http://127.0.0.1:8003 \
 
 ## 실물 없이 ARM64 컨테이너에서 측정
 
+PC의 런타임 설정은 `compare_runtime.py --server-label "실제 PC CPU와 OS" --output runtime-comparison.json`으로 비교할 수 있다. 추론 의존성이 설치된 Python으로 실행하며, 스레드 1·2·3개와 spinning 0·1의 서버 6개를 한 번에 하나씩 실행한다. 모든 측정의 기대 판정과 각 사진 예열 응답의 점수·좌표·인원 수까지 대조한다. [초기 PC 비교](reports/runtime-comparison-2026-11-02-pc.json)에서 판정은 동일했으며, 대기 방식 변경의 일관된 이득을 확인하지 못해 기본 `ORT_THREADS=3`, `ORT_SPINNING=1`을 유지했다. 이 기록은 일부 캐시 빌드가 겹친 초기 스크리닝으로 정밀한 설정별 순위를 뜻하지 않는다.
+
 `run_container_benchmark.py`는 실제 ONNX 서버를 Linux ARM64 컨테이너에서 실행한다. x86 PC에서는 QEMU/binfmt가 준비된 Docker가 필요하다. Windows에서는 WSL 내부에서 Linux Docker Engine과 이 도구를 함께 실행할 수도 있다. 컨테이너는 Pi Compose와 같은 메모리 1 GiB, ORT 스레드 3개를 사용하며 CPU quota 3개, swap 0으로 제한한다. 이 CPU quota는 Pi 5의 코어 성능이나 클럭을 재현하지 않는다.
 
 추론 코드와 측정 도구를 커밋한 뒤 저장소 루트에서 실행한다. Python은 표준 라이브러리만 필요하다. Docker CLI가 로컬 Linux 엔진에 연결되어 있어야 하며 cgroup v2를 사용한다.

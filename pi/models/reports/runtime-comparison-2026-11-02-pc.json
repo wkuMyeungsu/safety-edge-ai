@@ -1,0 +1,2636 @@
+{
+  "comparison": "same model and 640 input; sequential native HTTP servers; all 6 runtime settings",
+  "exact_prediction_parity_excluding_infer_ms": true,
+  "parity_note": "각 사진의 예열 응답을 비교함. 각 설정의 모든 측정·동시 요청 응답은 expected.json과도 대조함.",
+  "reports": [
+    {
+      "measured_at_utc": "2026-11-02T06:01:22.825932+00:00",
+      "code_commit": "52c9087040ec5dd5739b56ebb2251ca35864e708",
+      "server_label": "Intel Core Ultra 7 258V / Windows 11 x64 / ONNX Runtime 1.20.1; native; ORT_THREADS=3; ORT_SPINNING=1",
+      "client_platform": "Windows-11-10.0.26300-SP0",
+      "model_sha256_local": "0471240ce41e89bc0e58daf0b12d33102d6a70db5bad611f90533f6d3402cb17",
+      "model_identity_note": "서버 /health의 이름·클래스와 로컬 파일 해시를 확인함. 서버 파일의 해시는 HTTP로 제공되지 않으므로 MODEL_PATH를 별도로 확인해야 함.",
+      "health": {
+        "service": "inference",
+        "status": "ok",
+        "model_loaded": true,
+        "model": "ppe_yolov8.onnx",
+        "classes": [
+          "Boots",
+          "Ear-Protection",
+          "Glass",
+          "Glove",
+          "Hard_hat",
+          "Mask",
+          "No-Boots",
+          "No-Ear-Protection",
+          "No-Glass",
+          "No-Glove",
+          "No-Helmet",
+          "No-Mask",
+          "No-Vest",
+          "Worker",
+          "Vest",
+          "Circular_Saw",
+          "Fire_Extinguisher",
+          "Fire_prevention_Net",
+          "Welding_Equipment"
+        ],
+        "error": null
+      },
+      "warmup_per_image": 1,
+      "repeats_per_image": 5,
+      "http": {
+        "count": 20,
+        "median_ms": 161.481,
+        "p95_ms": 235.317,
+        "max_ms": 290.708
+      },
+      "inference": {
+        "count": 20,
+        "median_ms": 150,
+        "p95_ms": 226,
+        "max_ms": 285
+      },
+      "concurrency": {
+        "requests": 2,
+        "pending_at_health": 1,
+        "health_ms": 2.694,
+        "all_predictions_match": true
+      },
+      "cases": [
+        {
+          "image": "blank.jpg",
+          "expected": {
+            "verdict": "no_person",
+            "persons": 0
+          },
+          "samples": [
+            {
+              "http_ms": 290.708,
+              "infer_ms": 285
+            },
+            {
+              "http_ms": 231.255,
+              "infer_ms": 226
+            },
+            {
+              "http_ms": 222.701,
+              "infer_ms": 217
+            },
+            {
+              "http_ms": 235.317,
+              "infer_ms": 220
+            },
+            {
+              "http_ms": 222.458,
+              "infer_ms": 216
+            }
+          ],
+          "prediction": {
+            "verdict": "no_person",
+            "has_helmet": true,
+            "has_vest": true,
+            "confidence": 0,
+            "persons": 0,
+            "detections": [],
+            "image": {
+              "width": 640,
+              "height": 480
+            },
+            "model": "ppe_yolov8.onnx",
+            "infer_ms": 288
+          },
+          "http": {
+            "count": 5,
+            "median_ms": 231.255,
+            "p95_ms": 290.708,
+            "max_ms": 290.708
+          },
+          "inference": {
+            "count": 5,
+            "median_ms": 220,
+            "p95_ms": 285,
+            "max_ms": 285
+          }
+        },
+        {
+          "image": "test_11.jpg",
+          "expected": {
+            "verdict": "pass",
+            "has_helmet": true,
+            "has_vest": true
+          },
+          "samples": [
+            {
+              "http_ms": 224.259,
+              "infer_ms": 218
+            },
+            {
+              "http_ms": 184.684,
+              "infer_ms": 180
+            },
+            {
+              "http_ms": 148.988,
+              "infer_ms": 145
+            },
+            {
+              "http_ms": 151.292,
+              "infer_ms": 147
+            },
+            {
+              "http_ms": 151.729,
+              "infer_ms": 148
+            }
+          ],
+          "prediction": {
+            "verdict": "pass",
+            "has_helmet": true,
+            "has_vest": true,
+            "confidence": 0.705,
+            "persons": 1,
+            "detections": [
+              {
+                "label": "Worker",
+                "score": 0.807,
+                "box": [
+                  108,
+                  64,
+                  331,
+                  416
+                ]
+              },
+              {
+                "label": "Hard_hat",
+                "score": 0.705,
+                "box": [
+                  173,
+                  91,
+                  249,
+                  159
+                ]
+              },
+              {
+                "label": "Vest",
+                "score": 0.403,
+                "box": [
+                  125,
+                  175,
+                  296,
+                  415
+                ]
+              }
+            ],
+            "image": {
+              "width": 416,
+              "height": 416
+            },
+            "model": "ppe_yolov8.onnx",
+            "infer_ms": 219
+          },
+          "http": {
+            "count": 5,
+            "median_ms": 151.729,
+            "p95_ms": 224.259,
+            "max_ms": 224.259
+          },
+          "inference": {
+            "count": 5,
+            "median_ms": 148,
+            "p95_ms": 218,
+            "max_ms": 218
+          }
+        },
+        {
+          "image": "test_0.jpg",
+          "expected": {
+            "verdict": "fail",
+            "has_helmet": false,
+            "has_vest": false
+          },
+          "samples": [
+            {
+              "http_ms": 159.892,
+              "infer_ms": 143
+            },
+            {
+              "http_ms": 162.134,
+              "infer_ms": 145
+            },
+            {
+              "http_ms": 160.828,
+              "infer_ms": 144
+            },
+            {
+              "http_ms": 171.162,
+              "infer_ms": 154
+            },
+            {
+              "http_ms": 165.425,
+              "infer_ms": 148
+            }
+          ],
+          "prediction": {
+            "verdict": "fail",
+            "has_helmet": false,
+            "has_vest": false,
+            "confidence": 0.966,
+            "persons": 1,
+            "detections": [
+              {
+                "label": "No-Vest",
+                "score": 0.966,
+                "box": [
+                  23,
+                  1249,
+                  1074,
+                  1920
+                ]
+              },
+              {
+                "label": "Worker",
+                "score": 0.918,
+                "box": [
+                  6,
+                  336,
+                  1070,
+                  1920
+                ]
+              },
+              {
+                "label": "No-Glass",
+                "score": 0.834,
+                "box": [
+                  379,
+                  700,
+                  829,
+                  863
+                ]
+              },
+              {
+                "label": "No-Mask",
+                "score": 0.764,
+                "box": [
+                  376,
+                  907,
+                  806,
+                  1178
+                ]
+              },
+              {
+                "label": "No-Ear-Protection",
+                "score": 0.648,
+                "box": [
+                  278,
+                  704,
+                  380,
+                  925
+                ]
+              },
+              {
+                "label": "No-Helmet",
+                "score": 0.579,
+                "box": [
+                  246,
+                  302,
+                  936,
+                  652
+                ]
+              }
+            ],
+            "image": {
+              "width": 1080,
+              "height": 1920
+            },
+            "model": "ppe_yolov8.onnx",
+            "infer_ms": 145
+          },
+          "http": {
+            "count": 5,
+            "median_ms": 162.134,
+            "p95_ms": 171.162,
+            "max_ms": 171.162
+          },
+          "inference": {
+            "count": 5,
+            "median_ms": 145,
+            "p95_ms": 154,
+            "max_ms": 154
+          }
+        },
+        {
+          "image": "test_26.jpg",
+          "expected": {
+            "verdict": "fail",
+            "has_helmet": true,
+            "has_vest": false
+          },
+          "samples": [
+            {
+              "http_ms": 147.038,
+              "infer_ms": 143
+            },
+            {
+              "http_ms": 148.255,
+              "infer_ms": 144
+            },
+            {
+              "http_ms": 151.518,
+              "infer_ms": 148
+            },
+            {
+              "http_ms": 156.649,
+              "infer_ms": 153
+            },
+            {
+              "http_ms": 155.7,
+              "infer_ms": 152
+            }
+          ],
+          "prediction": {
+            "verdict": "fail",
+            "has_helmet": true,
+            "has_vest": false,
+            "confidence": 0.651,
+            "persons": 1,
+            "detections": [
+              {
+                "label": "Hard_hat",
+                "score": 0.834,
+                "box": [
+                  208,
+                  142,
+                  270,
+                  198
+                ]
+              },
+              {
+                "label": "No-Ear-Protection",
+                "score": 0.785,
+                "box": [
+                  240,
+                  194,
+                  263,
+                  226
+                ]
+              },
+              {
+                "label": "No-Vest",
+                "score": 0.651,
+                "box": [
+                  212,
+                  256,
+                  269,
+                  359
+                ]
+              },
+              {
+                "label": "Worker",
+                "score": 0.604,
+                "box": [
+                  151,
+                  137,
+                  270,
+                  359
+                ]
+              },
+              {
+                "label": "No-Mask",
+                "score": 0.58,
+                "box": [
+                  213,
+                  211,
+                  260,
+                  243
+                ]
+              },
+              {
+                "label": "No-Glass",
+                "score": 0.419,
+                "box": [
+                  212,
+                  193,
+                  232,
+                  211
+                ]
+              }
+            ],
+            "image": {
+              "width": 270,
+              "height": 360
+            },
+            "model": "ppe_yolov8.onnx",
+            "infer_ms": 145
+          },
+          "http": {
+            "count": 5,
+            "median_ms": 151.518,
+            "p95_ms": 156.649,
+            "max_ms": 156.649
+          },
+          "inference": {
+            "count": 5,
+            "median_ms": 148,
+            "p95_ms": 153,
+            "max_ms": 153
+          }
+        }
+      ],
+      "runtime_settings": {
+        "ort_threads": 3,
+        "ort_spinning": "1"
+      }
+    },
+    {
+      "measured_at_utc": "2026-11-02T06:01:30.490297+00:00",
+      "code_commit": "52c9087040ec5dd5739b56ebb2251ca35864e708",
+      "server_label": "Intel Core Ultra 7 258V / Windows 11 x64 / ONNX Runtime 1.20.1; native; ORT_THREADS=3; ORT_SPINNING=0",
+      "client_platform": "Windows-11-10.0.26300-SP0",
+      "model_sha256_local": "0471240ce41e89bc0e58daf0b12d33102d6a70db5bad611f90533f6d3402cb17",
+      "model_identity_note": "서버 /health의 이름·클래스와 로컬 파일 해시를 확인함. 서버 파일의 해시는 HTTP로 제공되지 않으므로 MODEL_PATH를 별도로 확인해야 함.",
+      "health": {
+        "service": "inference",
+        "status": "ok",
+        "model_loaded": true,
+        "model": "ppe_yolov8.onnx",
+        "classes": [
+          "Boots",
+          "Ear-Protection",
+          "Glass",
+          "Glove",
+          "Hard_hat",
+          "Mask",
+          "No-Boots",
+          "No-Ear-Protection",
+          "No-Glass",
+          "No-Glove",
+          "No-Helmet",
+          "No-Mask",
+          "No-Vest",
+          "Worker",
+          "Vest",
+          "Circular_Saw",
+          "Fire_Extinguisher",
+          "Fire_prevention_Net",
+          "Welding_Equipment"
+        ],
+        "error": null
+      },
+      "warmup_per_image": 1,
+      "repeats_per_image": 5,
+      "http": {
+        "count": 20,
+        "median_ms": 235.175,
+        "p95_ms": 266.872,
+        "max_ms": 279.021
+      },
+      "inference": {
+        "count": 20,
+        "median_ms": 210.5,
+        "p95_ms": 241,
+        "max_ms": 273
+      },
+      "concurrency": {
+        "requests": 2,
+        "pending_at_health": 1,
+        "health_ms": 3.933,
+        "all_predictions_match": true
+      },
+      "cases": [
+        {
+          "image": "blank.jpg",
+          "expected": {
+            "verdict": "no_person",
+            "persons": 0
+          },
+          "samples": [
+            {
+              "http_ms": 180.886,
+              "infer_ms": 177
+            },
+            {
+              "http_ms": 195.246,
+              "infer_ms": 191
+            },
+            {
+              "http_ms": 189.646,
+              "infer_ms": 184
+            },
+            {
+              "http_ms": 178.921,
+              "infer_ms": 164
+            },
+            {
+              "http_ms": 239.57,
+              "infer_ms": 216
+            }
+          ],
+          "prediction": {
+            "verdict": "no_person",
+            "has_helmet": true,
+            "has_vest": true,
+            "confidence": 0,
+            "persons": 0,
+            "detections": [],
+            "image": {
+              "width": 640,
+              "height": 480
+            },
+            "model": "ppe_yolov8.onnx",
+            "infer_ms": 193
+          },
+          "http": {
+            "count": 5,
+            "median_ms": 189.646,
+            "p95_ms": 239.57,
+            "max_ms": 239.57
+          },
+          "inference": {
+            "count": 5,
+            "median_ms": 184,
+            "p95_ms": 216,
+            "max_ms": 216
+          }
+        },
+        {
+          "image": "test_11.jpg",
+          "expected": {
+            "verdict": "pass",
+            "has_helmet": true,
+            "has_vest": true
+          },
+          "samples": [
+            {
+              "http_ms": 230.14,
+              "infer_ms": 206
+            },
+            {
+              "http_ms": 207.034,
+              "infer_ms": 203
+            },
+            {
+              "http_ms": 241.39,
+              "infer_ms": 210
+            },
+            {
+              "http_ms": 279.021,
+              "infer_ms": 273
+            },
+            {
+              "http_ms": 247.555,
+              "infer_ms": 241
+            }
+          ],
+          "prediction": {
+            "verdict": "pass",
+            "has_helmet": true,
+            "has_vest": true,
+            "confidence": 0.705,
+            "persons": 1,
+            "detections": [
+              {
+                "label": "Worker",
+                "score": 0.807,
+                "box": [
+                  108,
+                  64,
+                  331,
+                  416
+                ]
+              },
+              {
+                "label": "Hard_hat",
+                "score": 0.705,
+                "box": [
+                  173,
+                  91,
+                  249,
+                  159
+                ]
+              },
+              {
+                "label": "Vest",
+                "score": 0.403,
+                "box": [
+                  125,
+                  175,
+                  296,
+                  415
+                ]
+              }
+            ],
+            "image": {
+              "width": 416,
+              "height": 416
+            },
+            "model": "ppe_yolov8.onnx",
+            "infer_ms": 211
+          },
+          "http": {
+            "count": 5,
+            "median_ms": 241.39,
+            "p95_ms": 279.021,
+            "max_ms": 279.021
+          },
+          "inference": {
+            "count": 5,
+            "median_ms": 210,
+            "p95_ms": 273,
+            "max_ms": 273
+          }
+        },
+        {
+          "image": "test_0.jpg",
+          "expected": {
+            "verdict": "fail",
+            "has_helmet": false,
+            "has_vest": false
+          },
+          "samples": [
+            {
+              "http_ms": 231.524,
+              "infer_ms": 209
+            },
+            {
+              "http_ms": 247.884,
+              "infer_ms": 224
+            },
+            {
+              "http_ms": 253.475,
+              "infer_ms": 228
+            },
+            {
+              "http_ms": 253.003,
+              "infer_ms": 230
+            },
+            {
+              "http_ms": 266.872,
+              "infer_ms": 225
+            }
+          ],
+          "prediction": {
+            "verdict": "fail",
+            "has_helmet": false,
+            "has_vest": false,
+            "confidence": 0.966,
+            "persons": 1,
+            "detections": [
+              {
+                "label": "No-Vest",
+                "score": 0.966,
+                "box": [
+                  23,
+                  1249,
+                  1074,
+                  1920
+                ]
+              },
+              {
+                "label": "Worker",
+                "score": 0.918,
+                "box": [
+                  6,
+                  336,
+                  1070,
+                  1920
+                ]
+              },
+              {
+                "label": "No-Glass",
+                "score": 0.834,
+                "box": [
+                  379,
+                  700,
+                  829,
+                  863
+                ]
+              },
+              {
+                "label": "No-Mask",
+                "score": 0.764,
+                "box": [
+                  376,
+                  907,
+                  806,
+                  1178
+                ]
+              },
+              {
+                "label": "No-Ear-Protection",
+                "score": 0.648,
+                "box": [
+                  278,
+                  704,
+                  380,
+                  925
+                ]
+              },
+              {
+                "label": "No-Helmet",
+                "score": 0.579,
+                "box": [
+                  246,
+                  302,
+                  936,
+                  652
+                ]
+              }
+            ],
+            "image": {
+              "width": 1080,
+              "height": 1920
+            },
+            "model": "ppe_yolov8.onnx",
+            "infer_ms": 214
+          },
+          "http": {
+            "count": 5,
+            "median_ms": 253.003,
+            "p95_ms": 266.872,
+            "max_ms": 266.872
+          },
+          "inference": {
+            "count": 5,
+            "median_ms": 225,
+            "p95_ms": 230,
+            "max_ms": 230
+          }
+        },
+        {
+          "image": "test_26.jpg",
+          "expected": {
+            "verdict": "fail",
+            "has_helmet": true,
+            "has_vest": false
+          },
+          "samples": [
+            {
+              "http_ms": 171.999,
+              "infer_ms": 168
+            },
+            {
+              "http_ms": 179.855,
+              "infer_ms": 176
+            },
+            {
+              "http_ms": 244.337,
+              "infer_ms": 216
+            },
+            {
+              "http_ms": 238.826,
+              "infer_ms": 234
+            },
+            {
+              "http_ms": 214.877,
+              "infer_ms": 211
+            }
+          ],
+          "prediction": {
+            "verdict": "fail",
+            "has_helmet": true,
+            "has_vest": false,
+            "confidence": 0.651,
+            "persons": 1,
+            "detections": [
+              {
+                "label": "Hard_hat",
+                "score": 0.834,
+                "box": [
+                  208,
+                  142,
+                  270,
+                  198
+                ]
+              },
+              {
+                "label": "No-Ear-Protection",
+                "score": 0.785,
+                "box": [
+                  240,
+                  194,
+                  263,
+                  226
+                ]
+              },
+              {
+                "label": "No-Vest",
+                "score": 0.651,
+                "box": [
+                  212,
+                  256,
+                  269,
+                  359
+                ]
+              },
+              {
+                "label": "Worker",
+                "score": 0.604,
+                "box": [
+                  151,
+                  137,
+                  270,
+                  359
+                ]
+              },
+              {
+                "label": "No-Mask",
+                "score": 0.58,
+                "box": [
+                  213,
+                  211,
+                  260,
+                  243
+                ]
+              },
+              {
+                "label": "No-Glass",
+                "score": 0.419,
+                "box": [
+                  212,
+                  193,
+                  232,
+                  211
+                ]
+              }
+            ],
+            "image": {
+              "width": 270,
+              "height": 360
+            },
+            "model": "ppe_yolov8.onnx",
+            "infer_ms": 205
+          },
+          "http": {
+            "count": 5,
+            "median_ms": 214.877,
+            "p95_ms": 244.337,
+            "max_ms": 244.337
+          },
+          "inference": {
+            "count": 5,
+            "median_ms": 211,
+            "p95_ms": 234,
+            "max_ms": 234
+          }
+        }
+      ],
+      "runtime_settings": {
+        "ort_threads": 3,
+        "ort_spinning": "0"
+      }
+    },
+    {
+      "measured_at_utc": "2026-11-02T06:01:38.963492+00:00",
+      "code_commit": "52c9087040ec5dd5739b56ebb2251ca35864e708",
+      "server_label": "Intel Core Ultra 7 258V / Windows 11 x64 / ONNX Runtime 1.20.1; native; ORT_THREADS=2; ORT_SPINNING=0",
+      "client_platform": "Windows-11-10.0.26300-SP0",
+      "model_sha256_local": "0471240ce41e89bc0e58daf0b12d33102d6a70db5bad611f90533f6d3402cb17",
+      "model_identity_note": "서버 /health의 이름·클래스와 로컬 파일 해시를 확인함. 서버 파일의 해시는 HTTP로 제공되지 않으므로 MODEL_PATH를 별도로 확인해야 함.",
+      "health": {
+        "service": "inference",
+        "status": "ok",
+        "model_loaded": true,
+        "model": "ppe_yolov8.onnx",
+        "classes": [
+          "Boots",
+          "Ear-Protection",
+          "Glass",
+          "Glove",
+          "Hard_hat",
+          "Mask",
+          "No-Boots",
+          "No-Ear-Protection",
+          "No-Glass",
+          "No-Glove",
+          "No-Helmet",
+          "No-Mask",
+          "No-Vest",
+          "Worker",
+          "Vest",
+          "Circular_Saw",
+          "Fire_Extinguisher",
+          "Fire_prevention_Net",
+          "Welding_Equipment"
+        ],
+        "error": null
+      },
+      "warmup_per_image": 1,
+      "repeats_per_image": 5,
+      "http": {
+        "count": 20,
+        "median_ms": 246.183,
+        "p95_ms": 292.752,
+        "max_ms": 319.434
+      },
+      "inference": {
+        "count": 20,
+        "median_ms": 238,
+        "p95_ms": 288,
+        "max_ms": 290
+      },
+      "concurrency": {
+        "requests": 2,
+        "pending_at_health": 1,
+        "health_ms": 2.102,
+        "all_predictions_match": true
+      },
+      "cases": [
+        {
+          "image": "blank.jpg",
+          "expected": {
+            "verdict": "no_person",
+            "persons": 0
+          },
+          "samples": [
+            {
+              "http_ms": 232.198,
+              "infer_ms": 227
+            },
+            {
+              "http_ms": 233.281,
+              "infer_ms": 229
+            },
+            {
+              "http_ms": 238.359,
+              "infer_ms": 234
+            },
+            {
+              "http_ms": 243.469,
+              "infer_ms": 238
+            },
+            {
+              "http_ms": 242.972,
+              "infer_ms": 238
+            }
+          ],
+          "prediction": {
+            "verdict": "no_person",
+            "has_helmet": true,
+            "has_vest": true,
+            "confidence": 0,
+            "persons": 0,
+            "detections": [],
+            "image": {
+              "width": 640,
+              "height": 480
+            },
+            "model": "ppe_yolov8.onnx",
+            "infer_ms": 338
+          },
+          "http": {
+            "count": 5,
+            "median_ms": 238.359,
+            "p95_ms": 243.469,
+            "max_ms": 243.469
+          },
+          "inference": {
+            "count": 5,
+            "median_ms": 234,
+            "p95_ms": 238,
+            "max_ms": 238
+          }
+        },
+        {
+          "image": "test_11.jpg",
+          "expected": {
+            "verdict": "pass",
+            "has_helmet": true,
+            "has_vest": true
+          },
+          "samples": [
+            {
+              "http_ms": 282.905,
+              "infer_ms": 278
+            },
+            {
+              "http_ms": 283.859,
+              "infer_ms": 267
+            },
+            {
+              "http_ms": 264.99,
+              "infer_ms": 260
+            },
+            {
+              "http_ms": 292.752,
+              "infer_ms": 288
+            },
+            {
+              "http_ms": 269.366,
+              "infer_ms": 264
+            }
+          ],
+          "prediction": {
+            "verdict": "pass",
+            "has_helmet": true,
+            "has_vest": true,
+            "confidence": 0.705,
+            "persons": 1,
+            "detections": [
+              {
+                "label": "Worker",
+                "score": 0.807,
+                "box": [
+                  108,
+                  64,
+                  331,
+                  416
+                ]
+              },
+              {
+                "label": "Hard_hat",
+                "score": 0.705,
+                "box": [
+                  173,
+                  91,
+                  249,
+                  159
+                ]
+              },
+              {
+                "label": "Vest",
+                "score": 0.403,
+                "box": [
+                  125,
+                  175,
+                  296,
+                  415
+                ]
+              }
+            ],
+            "image": {
+              "width": 416,
+              "height": 416
+            },
+            "model": "ppe_yolov8.onnx",
+            "infer_ms": 241
+          },
+          "http": {
+            "count": 5,
+            "median_ms": 282.905,
+            "p95_ms": 292.752,
+            "max_ms": 292.752
+          },
+          "inference": {
+            "count": 5,
+            "median_ms": 267,
+            "p95_ms": 288,
+            "max_ms": 288
+          }
+        },
+        {
+          "image": "test_0.jpg",
+          "expected": {
+            "verdict": "fail",
+            "has_helmet": false,
+            "has_vest": false
+          },
+          "samples": [
+            {
+              "http_ms": 286.703,
+              "infer_ms": 254
+            },
+            {
+              "http_ms": 319.434,
+              "infer_ms": 290
+            },
+            {
+              "http_ms": 248.225,
+              "infer_ms": 230
+            },
+            {
+              "http_ms": 232.013,
+              "infer_ms": 214
+            },
+            {
+              "http_ms": 237.046,
+              "infer_ms": 220
+            }
+          ],
+          "prediction": {
+            "verdict": "fail",
+            "has_helmet": false,
+            "has_vest": false,
+            "confidence": 0.966,
+            "persons": 1,
+            "detections": [
+              {
+                "label": "No-Vest",
+                "score": 0.966,
+                "box": [
+                  23,
+                  1249,
+                  1074,
+                  1920
+                ]
+              },
+              {
+                "label": "Worker",
+                "score": 0.918,
+                "box": [
+                  6,
+                  336,
+                  1070,
+                  1920
+                ]
+              },
+              {
+                "label": "No-Glass",
+                "score": 0.834,
+                "box": [
+                  379,
+                  700,
+                  829,
+                  863
+                ]
+              },
+              {
+                "label": "No-Mask",
+                "score": 0.764,
+                "box": [
+                  376,
+                  907,
+                  806,
+                  1178
+                ]
+              },
+              {
+                "label": "No-Ear-Protection",
+                "score": 0.648,
+                "box": [
+                  278,
+                  704,
+                  380,
+                  925
+                ]
+              },
+              {
+                "label": "No-Helmet",
+                "score": 0.579,
+                "box": [
+                  246,
+                  302,
+                  936,
+                  652
+                ]
+              }
+            ],
+            "image": {
+              "width": 1080,
+              "height": 1920
+            },
+            "model": "ppe_yolov8.onnx",
+            "infer_ms": 237
+          },
+          "http": {
+            "count": 5,
+            "median_ms": 248.225,
+            "p95_ms": 319.434,
+            "max_ms": 319.434
+          },
+          "inference": {
+            "count": 5,
+            "median_ms": 230,
+            "p95_ms": 290,
+            "max_ms": 290
+          }
+        },
+        {
+          "image": "test_26.jpg",
+          "expected": {
+            "verdict": "fail",
+            "has_helmet": true,
+            "has_vest": false
+          },
+          "samples": [
+            {
+              "http_ms": 244.142,
+              "infer_ms": 218
+            },
+            {
+              "http_ms": 218.539,
+              "infer_ms": 215
+            },
+            {
+              "http_ms": 230.608,
+              "infer_ms": 211
+            },
+            {
+              "http_ms": 267.713,
+              "infer_ms": 241
+            },
+            {
+              "http_ms": 249.706,
+              "infer_ms": 246
+            }
+          ],
+          "prediction": {
+            "verdict": "fail",
+            "has_helmet": true,
+            "has_vest": false,
+            "confidence": 0.651,
+            "persons": 1,
+            "detections": [
+              {
+                "label": "Hard_hat",
+                "score": 0.834,
+                "box": [
+                  208,
+                  142,
+                  270,
+                  198
+                ]
+              },
+              {
+                "label": "No-Ear-Protection",
+                "score": 0.785,
+                "box": [
+                  240,
+                  194,
+                  263,
+                  226
+                ]
+              },
+              {
+                "label": "No-Vest",
+                "score": 0.651,
+                "box": [
+                  212,
+                  256,
+                  269,
+                  359
+                ]
+              },
+              {
+                "label": "Worker",
+                "score": 0.604,
+                "box": [
+                  151,
+                  137,
+                  270,
+                  359
+                ]
+              },
+              {
+                "label": "No-Mask",
+                "score": 0.58,
+                "box": [
+                  213,
+                  211,
+                  260,
+                  243
+                ]
+              },
+              {
+                "label": "No-Glass",
+                "score": 0.419,
+                "box": [
+                  212,
+                  193,
+                  232,
+                  211
+                ]
+              }
+            ],
+            "image": {
+              "width": 270,
+              "height": 360
+            },
+            "model": "ppe_yolov8.onnx",
+            "infer_ms": 215
+          },
+          "http": {
+            "count": 5,
+            "median_ms": 244.142,
+            "p95_ms": 267.713,
+            "max_ms": 267.713
+          },
+          "inference": {
+            "count": 5,
+            "median_ms": 218,
+            "p95_ms": 246,
+            "max_ms": 246
+          }
+        }
+      ],
+      "runtime_settings": {
+        "ort_threads": 2,
+        "ort_spinning": "0"
+      }
+    },
+    {
+      "measured_at_utc": "2026-11-02T06:02:00.675029+00:00",
+      "code_commit": "52c9087040ec5dd5739b56ebb2251ca35864e708",
+      "server_label": "Intel Core Ultra 7 258V / Windows 11 x64 / ONNX Runtime 1.20.1; native; ORT_THREADS=1; ORT_SPINNING=0",
+      "client_platform": "Windows-11-10.0.26300-SP0",
+      "model_sha256_local": "0471240ce41e89bc0e58daf0b12d33102d6a70db5bad611f90533f6d3402cb17",
+      "model_identity_note": "서버 /health의 이름·클래스와 로컬 파일 해시를 확인함. 서버 파일의 해시는 HTTP로 제공되지 않으므로 MODEL_PATH를 별도로 확인해야 함.",
+      "health": {
+        "service": "inference",
+        "status": "ok",
+        "model_loaded": true,
+        "model": "ppe_yolov8.onnx",
+        "classes": [
+          "Boots",
+          "Ear-Protection",
+          "Glass",
+          "Glove",
+          "Hard_hat",
+          "Mask",
+          "No-Boots",
+          "No-Ear-Protection",
+          "No-Glass",
+          "No-Glove",
+          "No-Helmet",
+          "No-Mask",
+          "No-Vest",
+          "Worker",
+          "Vest",
+          "Circular_Saw",
+          "Fire_Extinguisher",
+          "Fire_prevention_Net",
+          "Welding_Equipment"
+        ],
+        "error": null
+      },
+      "warmup_per_image": 1,
+      "repeats_per_image": 5,
+      "http": {
+        "count": 20,
+        "median_ms": 762.797,
+        "p95_ms": 789.671,
+        "max_ms": 804.452
+      },
+      "inference": {
+        "count": 20,
+        "median_ms": 748,
+        "p95_ms": 778,
+        "max_ms": 779
+      },
+      "concurrency": {
+        "requests": 2,
+        "pending_at_health": 2,
+        "health_ms": 5.492,
+        "all_predictions_match": true
+      },
+      "cases": [
+        {
+          "image": "blank.jpg",
+          "expected": {
+            "verdict": "no_person",
+            "persons": 0
+          },
+          "samples": [
+            {
+              "http_ms": 773.137,
+              "infer_ms": 764
+            },
+            {
+              "http_ms": 743.542,
+              "infer_ms": 737
+            },
+            {
+              "http_ms": 784.442,
+              "infer_ms": 778
+            },
+            {
+              "http_ms": 740.576,
+              "infer_ms": 732
+            },
+            {
+              "http_ms": 749.884,
+              "infer_ms": 743
+            }
+          ],
+          "prediction": {
+            "verdict": "no_person",
+            "has_helmet": true,
+            "has_vest": true,
+            "confidence": 0,
+            "persons": 0,
+            "detections": [],
+            "image": {
+              "width": 640,
+              "height": 480
+            },
+            "model": "ppe_yolov8.onnx",
+            "infer_ms": 752
+          },
+          "http": {
+            "count": 5,
+            "median_ms": 749.884,
+            "p95_ms": 784.442,
+            "max_ms": 784.442
+          },
+          "inference": {
+            "count": 5,
+            "median_ms": 743,
+            "p95_ms": 778,
+            "max_ms": 778
+          }
+        },
+        {
+          "image": "test_11.jpg",
+          "expected": {
+            "verdict": "pass",
+            "has_helmet": true,
+            "has_vest": true
+          },
+          "samples": [
+            {
+              "http_ms": 751.546,
+              "infer_ms": 746
+            },
+            {
+              "http_ms": 776.31,
+              "infer_ms": 748
+            },
+            {
+              "http_ms": 743.159,
+              "infer_ms": 737
+            },
+            {
+              "http_ms": 763.208,
+              "infer_ms": 754
+            },
+            {
+              "http_ms": 769.162,
+              "infer_ms": 761
+            }
+          ],
+          "prediction": {
+            "verdict": "pass",
+            "has_helmet": true,
+            "has_vest": true,
+            "confidence": 0.705,
+            "persons": 1,
+            "detections": [
+              {
+                "label": "Worker",
+                "score": 0.807,
+                "box": [
+                  108,
+                  64,
+                  331,
+                  416
+                ]
+              },
+              {
+                "label": "Hard_hat",
+                "score": 0.705,
+                "box": [
+                  173,
+                  91,
+                  249,
+                  159
+                ]
+              },
+              {
+                "label": "Vest",
+                "score": 0.403,
+                "box": [
+                  125,
+                  175,
+                  296,
+                  415
+                ]
+              }
+            ],
+            "image": {
+              "width": 416,
+              "height": 416
+            },
+            "model": "ppe_yolov8.onnx",
+            "infer_ms": 750
+          },
+          "http": {
+            "count": 5,
+            "median_ms": 763.208,
+            "p95_ms": 776.31,
+            "max_ms": 776.31
+          },
+          "inference": {
+            "count": 5,
+            "median_ms": 748,
+            "p95_ms": 761,
+            "max_ms": 761
+          }
+        },
+        {
+          "image": "test_0.jpg",
+          "expected": {
+            "verdict": "fail",
+            "has_helmet": false,
+            "has_vest": false
+          },
+          "samples": [
+            {
+              "http_ms": 736.792,
+              "infer_ms": 707
+            },
+            {
+              "http_ms": 804.452,
+              "infer_ms": 776
+            },
+            {
+              "http_ms": 780.104,
+              "infer_ms": 745
+            },
+            {
+              "http_ms": 728.48,
+              "infer_ms": 702
+            },
+            {
+              "http_ms": 761.163,
+              "infer_ms": 738
+            }
+          ],
+          "prediction": {
+            "verdict": "fail",
+            "has_helmet": false,
+            "has_vest": false,
+            "confidence": 0.966,
+            "persons": 1,
+            "detections": [
+              {
+                "label": "No-Vest",
+                "score": 0.966,
+                "box": [
+                  23,
+                  1249,
+                  1074,
+                  1920
+                ]
+              },
+              {
+                "label": "Worker",
+                "score": 0.918,
+                "box": [
+                  6,
+                  336,
+                  1070,
+                  1920
+                ]
+              },
+              {
+                "label": "No-Glass",
+                "score": 0.834,
+                "box": [
+                  379,
+                  700,
+                  829,
+                  863
+                ]
+              },
+              {
+                "label": "No-Mask",
+                "score": 0.764,
+                "box": [
+                  376,
+                  907,
+                  806,
+                  1178
+                ]
+              },
+              {
+                "label": "No-Ear-Protection",
+                "score": 0.648,
+                "box": [
+                  278,
+                  704,
+                  380,
+                  925
+                ]
+              },
+              {
+                "label": "No-Helmet",
+                "score": 0.579,
+                "box": [
+                  246,
+                  302,
+                  936,
+                  652
+                ]
+              }
+            ],
+            "image": {
+              "width": 1080,
+              "height": 1920
+            },
+            "model": "ppe_yolov8.onnx",
+            "infer_ms": 760
+          },
+          "http": {
+            "count": 5,
+            "median_ms": 761.163,
+            "p95_ms": 804.452,
+            "max_ms": 804.452
+          },
+          "inference": {
+            "count": 5,
+            "median_ms": 738,
+            "p95_ms": 776,
+            "max_ms": 776
+          }
+        },
+        {
+          "image": "test_26.jpg",
+          "expected": {
+            "verdict": "fail",
+            "has_helmet": true,
+            "has_vest": false
+          },
+          "samples": [
+            {
+              "http_ms": 754.255,
+              "infer_ms": 748
+            },
+            {
+              "http_ms": 763.407,
+              "infer_ms": 757
+            },
+            {
+              "http_ms": 762.386,
+              "infer_ms": 757
+            },
+            {
+              "http_ms": 789.671,
+              "infer_ms": 761
+            },
+            {
+              "http_ms": 786.258,
+              "infer_ms": 779
+            }
+          ],
+          "prediction": {
+            "verdict": "fail",
+            "has_helmet": true,
+            "has_vest": false,
+            "confidence": 0.651,
+            "persons": 1,
+            "detections": [
+              {
+                "label": "Hard_hat",
+                "score": 0.834,
+                "box": [
+                  208,
+                  142,
+                  270,
+                  198
+                ]
+              },
+              {
+                "label": "No-Ear-Protection",
+                "score": 0.785,
+                "box": [
+                  240,
+                  194,
+                  263,
+                  226
+                ]
+              },
+              {
+                "label": "No-Vest",
+                "score": 0.651,
+                "box": [
+                  212,
+                  256,
+                  269,
+                  359
+                ]
+              },
+              {
+                "label": "Worker",
+                "score": 0.604,
+                "box": [
+                  151,
+                  137,
+                  270,
+                  359
+                ]
+              },
+              {
+                "label": "No-Mask",
+                "score": 0.58,
+                "box": [
+                  213,
+                  211,
+                  260,
+                  243
+                ]
+              },
+              {
+                "label": "No-Glass",
+                "score": 0.419,
+                "box": [
+                  212,
+                  193,
+                  232,
+                  211
+                ]
+              }
+            ],
+            "image": {
+              "width": 270,
+              "height": 360
+            },
+            "model": "ppe_yolov8.onnx",
+            "infer_ms": 732
+          },
+          "http": {
+            "count": 5,
+            "median_ms": 763.407,
+            "p95_ms": 789.671,
+            "max_ms": 789.671
+          },
+          "inference": {
+            "count": 5,
+            "median_ms": 757,
+            "p95_ms": 779,
+            "max_ms": 779
+          }
+        }
+      ],
+      "runtime_settings": {
+        "ort_threads": 1,
+        "ort_spinning": "0"
+      }
+    },
+    {
+      "measured_at_utc": "2026-11-02T06:02:23.157842+00:00",
+      "code_commit": "52c9087040ec5dd5739b56ebb2251ca35864e708",
+      "server_label": "Intel Core Ultra 7 258V / Windows 11 x64 / ONNX Runtime 1.20.1; native; ORT_THREADS=1; ORT_SPINNING=1",
+      "client_platform": "Windows-11-10.0.26300-SP0",
+      "model_sha256_local": "0471240ce41e89bc0e58daf0b12d33102d6a70db5bad611f90533f6d3402cb17",
+      "model_identity_note": "서버 /health의 이름·클래스와 로컬 파일 해시를 확인함. 서버 파일의 해시는 HTTP로 제공되지 않으므로 MODEL_PATH를 별도로 확인해야 함.",
+      "health": {
+        "service": "inference",
+        "status": "ok",
+        "model_loaded": true,
+        "model": "ppe_yolov8.onnx",
+        "classes": [
+          "Boots",
+          "Ear-Protection",
+          "Glass",
+          "Glove",
+          "Hard_hat",
+          "Mask",
+          "No-Boots",
+          "No-Ear-Protection",
+          "No-Glass",
+          "No-Glove",
+          "No-Helmet",
+          "No-Mask",
+          "No-Vest",
+          "Worker",
+          "Vest",
+          "Circular_Saw",
+          "Fire_Extinguisher",
+          "Fire_prevention_Net",
+          "Welding_Equipment"
+        ],
+        "error": null
+      },
+      "warmup_per_image": 1,
+      "repeats_per_image": 5,
+      "http": {
+        "count": 20,
+        "median_ms": 763.183,
+        "p95_ms": 855.531,
+        "max_ms": 934.465
+      },
+      "inference": {
+        "count": 20,
+        "median_ms": 751,
+        "p95_ms": 833,
+        "max_ms": 907
+      },
+      "concurrency": {
+        "requests": 2,
+        "pending_at_health": 2,
+        "health_ms": 4.888,
+        "all_predictions_match": true
+      },
+      "cases": [
+        {
+          "image": "blank.jpg",
+          "expected": {
+            "verdict": "no_person",
+            "persons": 0
+          },
+          "samples": [
+            {
+              "http_ms": 813.539,
+              "infer_ms": 807
+            },
+            {
+              "http_ms": 597.058,
+              "infer_ms": 590
+            },
+            {
+              "http_ms": 508.651,
+              "infer_ms": 503
+            },
+            {
+              "http_ms": 570.254,
+              "infer_ms": 553
+            },
+            {
+              "http_ms": 740.561,
+              "infer_ms": 733
+            }
+          ],
+          "prediction": {
+            "verdict": "no_person",
+            "has_helmet": true,
+            "has_vest": true,
+            "confidence": 0,
+            "persons": 0,
+            "detections": [],
+            "image": {
+              "width": 640,
+              "height": 480
+            },
+            "model": "ppe_yolov8.onnx",
+            "infer_ms": 798
+          },
+          "http": {
+            "count": 5,
+            "median_ms": 597.058,
+            "p95_ms": 813.539,
+            "max_ms": 813.539
+          },
+          "inference": {
+            "count": 5,
+            "median_ms": 590,
+            "p95_ms": 807,
+            "max_ms": 807
+          }
+        },
+        {
+          "image": "test_11.jpg",
+          "expected": {
+            "verdict": "pass",
+            "has_helmet": true,
+            "has_vest": true
+          },
+          "samples": [
+            {
+              "http_ms": 793.586,
+              "infer_ms": 765
+            },
+            {
+              "http_ms": 742.301,
+              "infer_ms": 736
+            },
+            {
+              "http_ms": 794.051,
+              "infer_ms": 786
+            },
+            {
+              "http_ms": 761.215,
+              "infer_ms": 754
+            },
+            {
+              "http_ms": 754.575,
+              "infer_ms": 748
+            }
+          ],
+          "prediction": {
+            "verdict": "pass",
+            "has_helmet": true,
+            "has_vest": true,
+            "confidence": 0.705,
+            "persons": 1,
+            "detections": [
+              {
+                "label": "Worker",
+                "score": 0.807,
+                "box": [
+                  108,
+                  64,
+                  331,
+                  416
+                ]
+              },
+              {
+                "label": "Hard_hat",
+                "score": 0.705,
+                "box": [
+                  173,
+                  91,
+                  249,
+                  159
+                ]
+              },
+              {
+                "label": "Vest",
+                "score": 0.403,
+                "box": [
+                  125,
+                  175,
+                  296,
+                  415
+                ]
+              }
+            ],
+            "image": {
+              "width": 416,
+              "height": 416
+            },
+            "model": "ppe_yolov8.onnx",
+            "infer_ms": 678
+          },
+          "http": {
+            "count": 5,
+            "median_ms": 761.215,
+            "p95_ms": 794.051,
+            "max_ms": 794.051
+          },
+          "inference": {
+            "count": 5,
+            "median_ms": 754,
+            "p95_ms": 786,
+            "max_ms": 786
+          }
+        },
+        {
+          "image": "test_0.jpg",
+          "expected": {
+            "verdict": "fail",
+            "has_helmet": false,
+            "has_vest": false
+          },
+          "samples": [
+            {
+              "http_ms": 762.938,
+              "infer_ms": 738
+            },
+            {
+              "http_ms": 763.428,
+              "infer_ms": 737
+            },
+            {
+              "http_ms": 799.717,
+              "infer_ms": 772
+            },
+            {
+              "http_ms": 934.465,
+              "infer_ms": 907
+            },
+            {
+              "http_ms": 855.531,
+              "infer_ms": 833
+            }
+          ],
+          "prediction": {
+            "verdict": "fail",
+            "has_helmet": false,
+            "has_vest": false,
+            "confidence": 0.966,
+            "persons": 1,
+            "detections": [
+              {
+                "label": "No-Vest",
+                "score": 0.966,
+                "box": [
+                  23,
+                  1249,
+                  1074,
+                  1920
+                ]
+              },
+              {
+                "label": "Worker",
+                "score": 0.918,
+                "box": [
+                  6,
+                  336,
+                  1070,
+                  1920
+                ]
+              },
+              {
+                "label": "No-Glass",
+                "score": 0.834,
+                "box": [
+                  379,
+                  700,
+                  829,
+                  863
+                ]
+              },
+              {
+                "label": "No-Mask",
+                "score": 0.764,
+                "box": [
+                  376,
+                  907,
+                  806,
+                  1178
+                ]
+              },
+              {
+                "label": "No-Ear-Protection",
+                "score": 0.648,
+                "box": [
+                  278,
+                  704,
+                  380,
+                  925
+                ]
+              },
+              {
+                "label": "No-Helmet",
+                "score": 0.579,
+                "box": [
+                  246,
+                  302,
+                  936,
+                  652
+                ]
+              }
+            ],
+            "image": {
+              "width": 1080,
+              "height": 1920
+            },
+            "model": "ppe_yolov8.onnx",
+            "infer_ms": 722
+          },
+          "http": {
+            "count": 5,
+            "median_ms": 799.717,
+            "p95_ms": 934.465,
+            "max_ms": 934.465
+          },
+          "inference": {
+            "count": 5,
+            "median_ms": 772,
+            "p95_ms": 907,
+            "max_ms": 907
+          }
+        },
+        {
+          "image": "test_26.jpg",
+          "expected": {
+            "verdict": "fail",
+            "has_helmet": true,
+            "has_vest": false
+          },
+          "samples": [
+            {
+              "http_ms": 779.213,
+              "infer_ms": 774
+            },
+            {
+              "http_ms": 765.905,
+              "infer_ms": 760
+            },
+            {
+              "http_ms": 749.926,
+              "infer_ms": 745
+            },
+            {
+              "http_ms": 725.317,
+              "infer_ms": 719
+            },
+            {
+              "http_ms": 768.88,
+              "infer_ms": 760
+            }
+          ],
+          "prediction": {
+            "verdict": "fail",
+            "has_helmet": true,
+            "has_vest": false,
+            "confidence": 0.651,
+            "persons": 1,
+            "detections": [
+              {
+                "label": "Hard_hat",
+                "score": 0.834,
+                "box": [
+                  208,
+                  142,
+                  270,
+                  198
+                ]
+              },
+              {
+                "label": "No-Ear-Protection",
+                "score": 0.785,
+                "box": [
+                  240,
+                  194,
+                  263,
+                  226
+                ]
+              },
+              {
+                "label": "No-Vest",
+                "score": 0.651,
+                "box": [
+                  212,
+                  256,
+                  269,
+                  359
+                ]
+              },
+              {
+                "label": "Worker",
+                "score": 0.604,
+                "box": [
+                  151,
+                  137,
+                  270,
+                  359
+                ]
+              },
+              {
+                "label": "No-Mask",
+                "score": 0.58,
+                "box": [
+                  213,
+                  211,
+                  260,
+                  243
+                ]
+              },
+              {
+                "label": "No-Glass",
+                "score": 0.419,
+                "box": [
+                  212,
+                  193,
+                  232,
+                  211
+                ]
+              }
+            ],
+            "image": {
+              "width": 270,
+              "height": 360
+            },
+            "model": "ppe_yolov8.onnx",
+            "infer_ms": 716
+          },
+          "http": {
+            "count": 5,
+            "median_ms": 765.905,
+            "p95_ms": 779.213,
+            "max_ms": 779.213
+          },
+          "inference": {
+            "count": 5,
+            "median_ms": 760,
+            "p95_ms": 774,
+            "max_ms": 774
+          }
+        }
+      ],
+      "runtime_settings": {
+        "ort_threads": 1,
+        "ort_spinning": "1"
+      }
+    },
+    {
+      "measured_at_utc": "2026-11-02T06:02:33.246451+00:00",
+      "code_commit": "52c9087040ec5dd5739b56ebb2251ca35864e708",
+      "server_label": "Intel Core Ultra 7 258V / Windows 11 x64 / ONNX Runtime 1.20.1; native; ORT_THREADS=2; ORT_SPINNING=1",
+      "client_platform": "Windows-11-10.0.26300-SP0",
+      "model_sha256_local": "0471240ce41e89bc0e58daf0b12d33102d6a70db5bad611f90533f6d3402cb17",
+      "model_identity_note": "서버 /health의 이름·클래스와 로컬 파일 해시를 확인함. 서버 파일의 해시는 HTTP로 제공되지 않으므로 MODEL_PATH를 별도로 확인해야 함.",
+      "health": {
+        "service": "inference",
+        "status": "ok",
+        "model_loaded": true,
+        "model": "ppe_yolov8.onnx",
+        "classes": [
+          "Boots",
+          "Ear-Protection",
+          "Glass",
+          "Glove",
+          "Hard_hat",
+          "Mask",
+          "No-Boots",
+          "No-Ear-Protection",
+          "No-Glass",
+          "No-Glove",
+          "No-Helmet",
+          "No-Mask",
+          "No-Vest",
+          "Worker",
+          "Vest",
+          "Circular_Saw",
+          "Fire_Extinguisher",
+          "Fire_prevention_Net",
+          "Welding_Equipment"
+        ],
+        "error": null
+      },
+      "warmup_per_image": 1,
+      "repeats_per_image": 5,
+      "http": {
+        "count": 20,
+        "median_ms": 295.996,
+        "p95_ms": 385.647,
+        "max_ms": 396.12
+      },
+      "inference": {
+        "count": 20,
+        "median_ms": 284,
+        "p95_ms": 379,
+        "max_ms": 390
+      },
+      "concurrency": {
+        "requests": 2,
+        "pending_at_health": 1,
+        "health_ms": 2.401,
+        "all_predictions_match": true
+      },
+      "cases": [
+        {
+          "image": "blank.jpg",
+          "expected": {
+            "verdict": "no_person",
+            "persons": 0
+          },
+          "samples": [
+            {
+              "http_ms": 355.866,
+              "infer_ms": 349
+            },
+            {
+              "http_ms": 360.066,
+              "infer_ms": 354
+            },
+            {
+              "http_ms": 396.12,
+              "infer_ms": 390
+            },
+            {
+              "http_ms": 385.647,
+              "infer_ms": 379
+            },
+            {
+              "http_ms": 352.847,
+              "infer_ms": 347
+            }
+          ],
+          "prediction": {
+            "verdict": "no_person",
+            "has_helmet": true,
+            "has_vest": true,
+            "confidence": 0,
+            "persons": 0,
+            "detections": [],
+            "image": {
+              "width": 640,
+              "height": 480
+            },
+            "model": "ppe_yolov8.onnx",
+            "infer_ms": 373
+          },
+          "http": {
+            "count": 5,
+            "median_ms": 360.066,
+            "p95_ms": 396.12,
+            "max_ms": 396.12
+          },
+          "inference": {
+            "count": 5,
+            "median_ms": 354,
+            "p95_ms": 390,
+            "max_ms": 390
+          }
+        },
+        {
+          "image": "test_11.jpg",
+          "expected": {
+            "verdict": "pass",
+            "has_helmet": true,
+            "has_vest": true
+          },
+          "samples": [
+            {
+              "http_ms": 357.362,
+              "infer_ms": 351
+            },
+            {
+              "http_ms": 363.056,
+              "infer_ms": 356
+            },
+            {
+              "http_ms": 351.698,
+              "infer_ms": 346
+            },
+            {
+              "http_ms": 354.703,
+              "infer_ms": 348
+            },
+            {
+              "http_ms": 376.367,
+              "infer_ms": 370
+            }
+          ],
+          "prediction": {
+            "verdict": "pass",
+            "has_helmet": true,
+            "has_vest": true,
+            "confidence": 0.705,
+            "persons": 1,
+            "detections": [
+              {
+                "label": "Worker",
+                "score": 0.807,
+                "box": [
+                  108,
+                  64,
+                  331,
+                  416
+                ]
+              },
+              {
+                "label": "Hard_hat",
+                "score": 0.705,
+                "box": [
+                  173,
+                  91,
+                  249,
+                  159
+                ]
+              },
+              {
+                "label": "Vest",
+                "score": 0.403,
+                "box": [
+                  125,
+                  175,
+                  296,
+                  415
+                ]
+              }
+            ],
+            "image": {
+              "width": 416,
+              "height": 416
+            },
+            "model": "ppe_yolov8.onnx",
+            "infer_ms": 351
+          },
+          "http": {
+            "count": 5,
+            "median_ms": 357.362,
+            "p95_ms": 376.367,
+            "max_ms": 376.367
+          },
+          "inference": {
+            "count": 5,
+            "median_ms": 351,
+            "p95_ms": 370,
+            "max_ms": 370
+          }
+        },
+        {
+          "image": "test_0.jpg",
+          "expected": {
+            "verdict": "fail",
+            "has_helmet": false,
+            "has_vest": false
+          },
+          "samples": [
+            {
+              "http_ms": 228.562,
+              "infer_ms": 210
+            },
+            {
+              "http_ms": 240.295,
+              "infer_ms": 222
+            },
+            {
+              "http_ms": 233.844,
+              "infer_ms": 213
+            },
+            {
+              "http_ms": 227.13,
+              "infer_ms": 209
+            },
+            {
+              "http_ms": 236.877,
+              "infer_ms": 219
+            }
+          ],
+          "prediction": {
+            "verdict": "fail",
+            "has_helmet": false,
+            "has_vest": false,
+            "confidence": 0.966,
+            "persons": 1,
+            "detections": [
+              {
+                "label": "No-Vest",
+                "score": 0.966,
+                "box": [
+                  23,
+                  1249,
+                  1074,
+                  1920
+                ]
+              },
+              {
+                "label": "Worker",
+                "score": 0.918,
+                "box": [
+                  6,
+                  336,
+                  1070,
+                  1920
+                ]
+              },
+              {
+                "label": "No-Glass",
+                "score": 0.834,
+                "box": [
+                  379,
+                  700,
+                  829,
+                  863
+                ]
+              },
+              {
+                "label": "No-Mask",
+                "score": 0.764,
+                "box": [
+                  376,
+                  907,
+                  806,
+                  1178
+                ]
+              },
+              {
+                "label": "No-Ear-Protection",
+                "score": 0.648,
+                "box": [
+                  278,
+                  704,
+                  380,
+                  925
+                ]
+              },
+              {
+                "label": "No-Helmet",
+                "score": 0.579,
+                "box": [
+                  246,
+                  302,
+                  936,
+                  652
+                ]
+              }
+            ],
+            "image": {
+              "width": 1080,
+              "height": 1920
+            },
+            "model": "ppe_yolov8.onnx",
+            "infer_ms": 285
+          },
+          "http": {
+            "count": 5,
+            "median_ms": 233.844,
+            "p95_ms": 240.295,
+            "max_ms": 240.295
+          },
+          "inference": {
+            "count": 5,
+            "median_ms": 213,
+            "p95_ms": 222,
+            "max_ms": 222
+          }
+        },
+        {
+          "image": "test_26.jpg",
+          "expected": {
+            "verdict": "fail",
+            "has_helmet": true,
+            "has_vest": false
+          },
+          "samples": [
+            {
+              "http_ms": 225.462,
+              "infer_ms": 221
+            },
+            {
+              "http_ms": 212.058,
+              "infer_ms": 208
+            },
+            {
+              "http_ms": 215.329,
+              "infer_ms": 211
+            },
+            {
+              "http_ms": 226.341,
+              "infer_ms": 221
+            },
+            {
+              "http_ms": 214.772,
+              "infer_ms": 210
+            }
+          ],
+          "prediction": {
+            "verdict": "fail",
+            "has_helmet": true,
+            "has_vest": false,
+            "confidence": 0.651,
+            "persons": 1,
+            "detections": [
+              {
+                "label": "Hard_hat",
+                "score": 0.834,
+                "box": [
+                  208,
+                  142,
+                  270,
+                  198
+                ]
+              },
+              {
+                "label": "No-Ear-Protection",
+                "score": 0.785,
+                "box": [
+                  240,
+                  194,
+                  263,
+                  226
+                ]
+              },
+              {
+                "label": "No-Vest",
+                "score": 0.651,
+                "box": [
+                  212,
+                  256,
+                  269,
+                  359
+                ]
+              },
+              {
+                "label": "Worker",
+                "score": 0.604,
+                "box": [
+                  151,
+                  137,
+                  270,
+                  359
+                ]
+              },
+              {
+                "label": "No-Mask",
+                "score": 0.58,
+                "box": [
+                  213,
+                  211,
+                  260,
+                  243
+                ]
+              },
+              {
+                "label": "No-Glass",
+                "score": 0.419,
+                "box": [
+                  212,
+                  193,
+                  232,
+                  211
+                ]
+              }
+            ],
+            "image": {
+              "width": 270,
+              "height": 360
+            },
+            "model": "ppe_yolov8.onnx",
+            "infer_ms": 245
+          },
+          "http": {
+            "count": 5,
+            "median_ms": 215.329,
+            "p95_ms": 226.341,
+            "max_ms": 226.341
+          },
+          "inference": {
+            "count": 5,
+            "median_ms": 211,
+            "p95_ms": 221,
+            "max_ms": 221
+          }
+        }
+      ],
+      "runtime_settings": {
+        "ort_threads": 2,
+        "ort_spinning": "1"
+      }
+    }
+  ],
+  "measurement_note": "초기 스크리닝. 두 번째 설정 실행 중 캐시된 Docker 이미지 빌드가 일부 겹쳤으므로 엄밀한 설정별 성능 순위로 해석하지 않음. 6종의 사진 기대 판정 및 예열 응답 동일성은 확인했으며 런타임 기본값은 유지함."
+}
