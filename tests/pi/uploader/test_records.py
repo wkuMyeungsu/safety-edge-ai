@@ -32,6 +32,13 @@ def test_inference_response_fields_are_ignored(uploader_url):
     assert r.status_code in (201, 202), r.text
 
 
+@pytest.mark.parametrize("frame_id", ["ab12cd34", "bad frame\nid", 123])
+def test_frame_id_is_optional_and_never_rejected(uploader_url, frame_id):
+    # frame_id는 로그용 선택 필드. 형식이 틀려도 기록은 받는다 (로그 설계 5절)
+    r = post(uploader_url, {**FAIL, "frame_id": frame_id})
+    assert r.status_code in (201, 202), r.text
+
+
 def test_detected_at_is_accepted(uploader_url):
     r = post(uploader_url, {**FAIL, "detected_at": "2026-11-02T09:30:00+09:00"})
     assert r.status_code in (201, 202), r.text

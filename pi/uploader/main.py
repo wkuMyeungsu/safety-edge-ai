@@ -11,17 +11,20 @@ import json
 import logging
 import os
 import re
+import time
 import uuid
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from pathlib import Path
 
 import httpx
+import uvicorn
 from fastapi import FastAPI, File, Form, Request, UploadFile
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
 SERVICE = os.environ.get("SERVICE_NAME", "uploader")
+PORT = int(os.environ.get("PORT", "8004"))
 BUFFER_DIR = Path(os.environ.get("BUFFER_DIR", "/buffer"))
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "").rstrip("/")
 SUPABASE_KEY = os.environ.get("SUPABASE_SERVICE_KEY", "")
@@ -33,8 +36,13 @@ SEND_TIMEOUT = 10  # 계약: Supabase 응답을 10초 넘게 기다리지 않는
 MAX_IMAGE_BYTES = 5 * 1024 * 1024  # violations 버킷 제한과 같다
 DEVICE_ID = re.compile(r"^[A-Za-z0-9_-]{1,64}$")
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s uploader %(levelname)s %(message)s")
-log = logging.getLogger("uploader")
+# 팀 로그 형식 (로그 설계 3절). 세 서비스가 같은 줄을 쓴다
+logging.basicConfig(level=os.environ.get("LOG_LEVEL", "INFO"),
+                    format="%(asctime)s %(levelname)-8s %(name)s %(filename)s:%(lineno)d %(message)s")
+logging.getLogger("httpx").setLevel(logging.WARNING)
+logging.getLogger("httpcore").setLevel(logging.WARNING)
+log = logging.getLogger("pi.uploader")
+retry_log = logging.getLogger("pi.uploader.retry")
 
 # 요청 처리와 재시도 작업이 같은 기록을 동시에 보내지 않게 한다
 send_lock = asyncio.Lock()
@@ -42,6 +50,11 @@ send_lock = asyncio.Lock()
 
 class Rejected(Exception):
     """Supabase가 4xx로 거절함. 다시 보내도 같은 결과다."""
+
+    def __init__(self, what: str, code: int, detail: str):
+        super().__init__(f"{what} {code}: {detail}")
+        self.code = code
+        self.detail = f"{what}: {detail}"
 
 
 def configured() -> bool:
@@ -59,15 +72,16 @@ def check_response(r: httpx.Response, what: str) -> None:
     if r.is_success:
         return
     if 400 <= r.status_code < 500 and r.status_code not in (408, 429):
-        raise Rejected(f"{what} {r.status_code}: {r.text[:200]}")
+        raise Rejected(what, r.status_code, r.text[:200])
     r.raise_for_status()
 
 
-async def send(client: httpx.AsyncClient, rid: str) -> int:
+async def send(client: httpx.AsyncClient, rid: str, item: dict) -> int:
     """버퍼의 기록 하나를 Supabase에 올리고 safety_logs.id를 돌려준다."""
-    item = json.loads((BUFFER_DIR / f"{rid}.json").read_text(encoding="utf-8"))
     image = (BUFFER_DIR / f"{rid}.jpg").read_bytes()
+    item = dict(item)
     path = item.pop("path")
+    item.pop("frame", None)  # 로그용. safety_logs 컬럼이 아니다
 
     # 같은 경로로 덮어쓰기(x-upsert)라서 재시도해도 사진이 두 장 생기지 않는다
     r = await client.post(
@@ -100,19 +114,27 @@ def move_to_failed(rid: str) -> None:
             src.replace(failed / src.name)
 
 
-async def try_send(client: httpx.AsyncClient, rid: str) -> int | None:
-    """보내면 id, 못 보내면 None. 거절된 기록은 failed/로 옮긴다."""
+async def try_send(client: httpx.AsyncClient, rid: str) -> tuple[int | None, str | None]:
+    """(safety_logs.id, None)이면 저장됨, (None, 오류 이름)이면 연결 문제로 버퍼에 남음.
+    (None, None)이면 이미 보냈거나 거절돼 failed/로 옮김. 연결 실패 로그는 부르는 쪽이 남긴다."""
     async with send_lock:
-        if not (BUFFER_DIR / f"{rid}.json").exists():  # 다른 쪽에서 이미 보냄
-            return None
+        record = BUFFER_DIR / f"{rid}.json"
+        if not record.exists():  # 다른 쪽에서 이미 보냄
+            return None, None
+        item = json.loads(record.read_text(encoding="utf-8"))
+        started = time.perf_counter()
         try:
-            return await asyncio.wait_for(send(client, rid), SEND_TIMEOUT)
+            log_id = await asyncio.wait_for(send(client, rid, item), SEND_TIMEOUT)
         except Rejected as e:
-            log.error("거절됨, failed/로 옮김 %s: %s", rid, e)
+            log.error("Supabase가 거절, failed/로 옮김 frame=%s rid=%s code=%d detail=%s",
+                      item.get("frame"), rid, e.code, e.detail)
             move_to_failed(rid)
+            return None, None
         except (httpx.HTTPError, asyncio.TimeoutError, OSError) as e:
-            log.warning("전송 실패, 버퍼에 둠 %s: %r", rid, e)
-        return None
+            return None, type(e).__name__
+        log.info("저장 성공 frame=%s rid=%s log_id=%s device=%s send_ms=%d", item.get("frame"), rid, log_id,
+                 item["device_id"], (time.perf_counter() - started) * 1000)
+        return log_id, None
 
 
 async def retry_loop(client: httpx.AsyncClient) -> None:
@@ -120,14 +142,27 @@ async def retry_loop(client: httpx.AsyncClient) -> None:
         await asyncio.sleep(RETRY_INTERVAL)
         if not BUFFER_DIR.exists():
             continue
+        tried = sent = 0
+        error = None
         for p in sorted(BUFFER_DIR.glob("*.json"), key=lambda p: p.stat().st_mtime):
-            if await try_send(client, p.stem) is None and (BUFFER_DIR / p.name).exists():
+            tried += 1
+            log_id, error = await try_send(client, p.stem)
+            sent += log_id is not None
+            if error:
                 break  # 아직 연결이 안 되면 다음 주기에 다시
-            log.info("재전송 성공 %s", p.stem)
+        # rid마다 찍지 않고 한 바퀴에 한 줄 (끊겨 있으면 30초마다 같은 줄이 쌓이지 않게)
+        if error:
+            retry_log.warning("재전송 실패, 다음에 다시 tried=%d sent=%d pending=%d error=%s",
+                              tried, sent, buffered_count(), error)
+        elif sent:
+            retry_log.info("재전송 sent=%d pending=%d", sent, buffered_count())
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    failed = len(list((BUFFER_DIR / "failed").glob("*.json"))) if (BUFFER_DIR / "failed").exists() else 0
+    log.info("시작 commit=%s supabase=%s pending=%d failed=%d retry_s=%g",
+             os.environ.get("COMMIT") or "unknown", configured(), buffered_count(), failed, RETRY_INTERVAL)
     if not configured():
         log.warning("SUPABASE_URL·SUPABASE_SERVICE_KEY 없음: 받은 기록은 버퍼에만 쌓는다")
         app.state.client = None
@@ -151,7 +186,7 @@ class BadRecord(Exception):
 
 @app.exception_handler(BadRecord)
 async def bad_record(_: Request, e: BadRecord):
-    log.warning("거부 %d: %s", e.status, e.detail)
+    log.warning("요청 거부 code=%d detail=%s", e.status, e.detail)
     return JSONResponse({"status": "rejected", "detail": e.detail}, status_code=e.status)
 
 
@@ -195,12 +230,18 @@ def parse_result(text: str) -> dict:
         if at.tzinfo is None:
             raise BadRecord(400, "detected_at에 시간대가 필요함")
 
+    # gateway가 붙인 사진 번호 (선택). 로그에만 쓰고 safety_logs에는 넣지 않는다. 형식이 틀리면 버린다
+    frame = r.get("frame_id")
+    if not isinstance(frame, str) or not DEVICE_ID.match(frame):
+        frame = None
+
     return {
         "created_at": at.astimezone(timezone.utc).isoformat(),
         "device_id": device_id,
         "has_helmet": r["has_helmet"],
         "has_vest": r["has_vest"],
         "confidence": confidence,
+        "frame": frame,
     }
 
 
@@ -221,6 +262,7 @@ def save_to_buffer(row: dict, image: bytes) -> str:
     tmp = BUFFER_DIR / f"{rid}.json.tmp"
     tmp.write_text(json.dumps(item, ensure_ascii=False), encoding="utf-8")
     tmp.replace(BUFFER_DIR / f"{rid}.json")
+    log.debug("버퍼에 저장 frame=%s rid=%s path=%s bytes=%d", row["frame"], rid, item["path"], len(image))
     return rid
 
 
@@ -243,12 +285,20 @@ async def records(request: Request, result: str = Form(...), image: UploadFile =
     client = request.app.state.client
     # 재시도 작업이 보내는 중이면 기다리지 않는다. 기다리면 gateway 제한 시간(15초)을 넘을 수 있다.
     # 이 기록은 버퍼에 있으니 다음 재시도 때 올라간다.
-    if client is not None and not send_lock.locked():
-        new_id = await try_send(client, rid)
-        if new_id is not None:
-            log.info("저장 %s → safety_logs.id=%s (%s)", rid, new_id, row["device_id"])
-            return JSONResponse({"status": "stored", "id": new_id}, status_code=201)
-
-    if (BUFFER_DIR / f"{rid}.json").exists():
-        log.info("버퍼에 둠, 나중에 다시 보냄 %s (%s)", rid, row["device_id"])
+    frame, device = row["frame"], row["device_id"]
+    if client is None:
+        log.info("버퍼에 둠 frame=%s rid=%s device=%s reason=supabase_설정_없음", frame, rid, device)
+    elif send_lock.locked():
+        log.info("버퍼에 둠 frame=%s rid=%s device=%s reason=재전송_중", frame, rid, device)
+    else:
+        log_id, error = await try_send(client, rid)
+        if log_id is not None:
+            return JSONResponse({"status": "stored", "id": log_id}, status_code=201)
+        if error:
+            log.warning("전송 실패, 버퍼에 둠 frame=%s rid=%s device=%s error=%s", frame, rid, device, error)
     return JSONResponse({"status": "buffered"}, status_code=202)
+
+
+if __name__ == "__main__":
+    # access 로그는 끈다 (healthcheck가 15초마다 찍힌다). 기동 메시지도 위 형식으로 찍힌다
+    uvicorn.run(app, host="0.0.0.0", port=PORT, workers=1, log_config=None, access_log=False)
