@@ -61,7 +61,7 @@ curl -H "X-Device-Id: test-curl" -H "Content-Type: image/jpeg" \
 
 ## 인터넷으로 보낼 때 (Pi와 다른 네트워크의 ESP32)
 
-Pi는 명수 집 네트워크에 있다. 다른 곳의 ESP32는 Tailscale Funnel이 열어 주는 HTTPS 주소로 보낸다.
+Pi는 현장 LAN 안에 있다. 외부 네트워크의 ESP32는 Tailscale Funnel이 열어 주는 HTTPS 주소로 보낸다.
 
 ```
 POST https://<Pi 이름>.<tailnet>.ts.net/frame
