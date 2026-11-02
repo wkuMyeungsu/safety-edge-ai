@@ -1,8 +1,9 @@
 # 마지막에 맞는 줄이 적용된다. 담당이 바뀌면 README "폴더별 담당" 표와 함께 고친다.
 *                         @wkuMyeungsu
 
-/esp32/                   @widee2018-code
-/tests/esp32/             @widee2018-code
+/esp32/                   @wkuMyeungsu
+/esp32/model/             @widee2018-code
+/tests/esp32/             @wkuMyeungsu
 
 /pi/                      @wkuMyeungsu
 /tests/pi/                @wkuMyeungsu
@@ -21,5 +22,5 @@
 
 /.github/                 @wkuMyeungsu
 
-/docs/contracts/          @widee2018-code @wkuMyeungsu @MOTNV @ki543219 @Binary-Ah
-/tests/contracts/         @widee2018-code @wkuMyeungsu @MOTNV @ki543219 @Binary-Ah
+/docs/contracts/          @wkuMyeungsu @MOTNV @ki543219 @Binary-Ah
+/tests/contracts/         @wkuMyeungsu @MOTNV @ki543219 @Binary-Ah

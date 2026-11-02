@@ -4,7 +4,7 @@
 
 | 폴더 | 담당 | 언제 CI에서 도는가 |
 |---|---|---|
-| `esp32/` | 대희 | `esp32/` 또는 `tests/esp32/`가 바뀐 PR |
+| `esp32/` | 명수 | `esp32/` 또는 `tests/esp32/`가 바뀐 PR |
 | `pi/gateway/` | 명수 | `pi/` 또는 `tests/pi/`가 바뀐 PR |
 | `pi/inference/` | 우진 | 〃 |
 | `pi/uploader/` | 도은 | 〃 (Pi 컨테이너라 pi job에서 돈다) |

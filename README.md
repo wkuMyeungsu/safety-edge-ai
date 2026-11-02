@@ -15,7 +15,7 @@ ESP32-S3가 사람을 감지한 프레임만 라즈베리 파이 5로 보내고,
 
 | 파트 | 하는 일 | 담당 |
 |---|---|---|
-| `esp32` | Edge Impulse 사람 감지, 카메라 펌웨어, 파이로 사진 전송 | 대희 (@widee2018-code) |
+| `esp32` | Edge Impulse 사람 감지, 카메라 펌웨어, 파이로 사진 전송 | 펌웨어 명수 (@wkuMyeungsu), 모델 대희 (@widee2018-code) |
 | `pi` | Pi 환경·배포·측정, gateway, PPE 모델 ONNX 변환·추론 | 명수 (@wkuMyeungsu), 우진 (@MOTNV) |
 | `cloud` | Supabase 테이블·버킷·RLS, Supabase에 기록을 쓰는 uploader | 도은 (@ki543219) |
 | `web` | 위반 기록 웹 페이지 | 진아 (@Binary-Ah) |
@@ -26,7 +26,8 @@ ESP32-S3가 사람을 감지한 프레임만 라즈베리 파이 5로 보내고,
 
 | 폴더 | 하는 일 | 담당 |
 |---|---|---|
-| `esp32/` | Edge Impulse 모델, 카메라 설정, 쿨다운, HTTP POST | 대희 |
+| `esp32/firmware/` | 카메라 설정, 쿨다운, HTTP POST | 명수 |
+| `esp32/model/` | Edge Impulse 사람 감지 모델 | 대희 |
 | `pi/docker-compose*.yml` | Pi 환경(OS·Docker), 서비스 구성, 배포, 메모리 측정 | 명수 |
 | `pi/gateway/` | 사진 수신, 대기 줄, inference → uploader 호출 순서 | 명수 |
 | `.github/` | CI | 명수 |
