@@ -11,6 +11,10 @@ create table if not exists public.safety_logs (
   image_url   text
 );
 
+-- 웹은 최신순 조회와 오늘 건수 집계를 created_at으로 한다.
+create index if not exists safety_logs_created_at_idx
+  on public.safety_logs (created_at desc);
+
 -- 웹(anon)은 읽기만 한다. 쓰기는 uploader의 service key(RLS 우회)로만 한다.
 alter table public.safety_logs enable row level security;
 
