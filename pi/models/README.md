@@ -201,3 +201,22 @@ python3 pi/models/run_container_benchmark.py \
 서버 추론 시간은 전처리·ONNX 실행·후처리·판정을 포함한다. JPEG 디코딩과 요청 대기는 HTTP 왕복 시간에만 포함된다. P95는 측정 20개의 nearest-rank 값이다. 메모리 최대값에는 QEMU와 모델 로드·해시 검사·계측 과정도 포함된다. **26초라는 시간은 이 PC의 에뮬레이션 결과이며 Pi 5 성능이나 현장 정확도 검증 결과가 아니다.**
 
 검증 과정에서 커밋 라벨 없는 이미지가 거부되고 성공 보고서가 생성되지 않는 것도 확인했다. 측정 후 전용 컨테이너는 자동 제거했으며, 재실행용 이미지는 남겨 두었다. 같은 코드의 ARM64 CI는 [run 41394841318](https://github.com/wkuMyeungsu/safety-edge-ai/actions/runs/41394841318)에서 58개 통과, 1개 건너뜀(모델 없는 경우의 503 검사)을 기록했다.
+
+## 실제 Pi 원격 연결·판정 확인 (2026-11-02)
+
+[원본 결과](reports/pi-gateway-smoke-2026-11-02.json)는 `deploy-pi`로 코드 `5bac24068f0cb2aa53015bcad6f8375627e302e7`을 실제 Pi에 배포하고, Tailscale Funnel의 `/frame`과 `/recent`로 사진 4종을 각각 한 번 확인한 기록이다. 배포 로그의 모델 입력은 **640×640**이었다. 배포는 Git 밖의 모델 파일을 교체하지 않으므로 **576 최적화 모델의 실물 비교 결과가 아니다.**
+
+| 사진 | 실제 판정 | Pi가 반환한 `infer_ms` | uploader |
+|---|---|---:|---|
+| `blank.jpg` | `no_person` | 459 | 호출 없음 |
+| `test_11.jpg` | `pass` (둘 다 착용) | 447 | 호출 없음 |
+| `test_0.jpg` | `fail` (둘 다 미착용) | 463 | `stored` |
+| `test_26.jpg` | `fail` (조끼 미착용) | 444 | `stored` |
+
+네 기대 판정이 모두 일치했고 대기 줄은 시험 후 0이었다. 위 시간은 서버의 전처리·추론·후처리 시간이며 인터넷 왕복·결과 조회 시간을 포함하지 않는다. 예열·반복 없이 사진마다 한 번 보낸 연결 검사이므로 정식 성능 벤치마크로 해석하지 않는다.
+
+현재 gateway API와 `deploy-pi status`에는 ONNX SHA256과 메모리 측정값이 없어 이를 확인하지 못했다. 파일명·640 입력·PPE 클래스 매핑은 시작 로그에서 확인했지만, 모델 파일 동일성과 576 적용·메모리 실측은 Pi 담당자의 확인이 필요하다.
+
+- [배포 성공](https://github.com/wkuMyeungsu/safety-edge-ai/actions/runs/41400753480), [시험 잠금 해제 성공](https://github.com/wkuMyeungsu/safety-edge-ai/actions/runs/41401068822). 로그에서 시험 중 표시가 없음을 확인했다.
+- 시험 장치 ID는 `test-woojin-20261102-063509`이며 위반 시험 기록 2건은 Supabase `log_id=8,9`로 남아 있다. 공개 API에 삭제 기능이 없어 삭제하지 않았다. 이 장치 ID로 식별할 수 있다.
+- 인증 토큰은 요청 헤더에만 사용했으며 보고서·코드·로그에 저장하지 않았다.
