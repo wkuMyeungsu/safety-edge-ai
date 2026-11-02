@@ -1,19 +1,17 @@
-import json
+"""uploader: gateway가 넘긴 위반 판정 + 사진을 Supabase에 저장한다.
+
+계약: docs/contracts/record-storage.md, docs/contracts/storage.md
+"""
+
 import os
-from http.server import BaseHTTPRequestHandler, HTTPServer
 
-SERVICE = os.environ.get("SERVICE_NAME", "unknown")
-PORT = int(os.environ.get("PORT", "8000"))
+from fastapi import FastAPI
 
+SERVICE = os.environ.get("SERVICE_NAME", "uploader")
 
-class Handler(BaseHTTPRequestHandler):
-    def do_GET(self):
-        body = json.dumps({"service": SERVICE, "status": "ok"}).encode()
-        self.send_response(200)
-        self.send_header("Content-Type", "application/json")
-        self.send_header("Content-Length", str(len(body)))
-        self.end_headers()
-        self.wfile.write(body)
+app = FastAPI()
 
 
-HTTPServer(("0.0.0.0", PORT), Handler).serve_forever()
+@app.get("/health")
+def health():
+    return {"service": SERVICE, "status": "ok"}
