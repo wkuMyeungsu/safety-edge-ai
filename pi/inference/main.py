@@ -99,9 +99,14 @@ def health():
 
 @app.post("/predict")
 async def predict(request: Request):
-    body = await request.body()
+    # Content-Length가 없는 chunked 요청도 읽는 도중에 제한한다.
+    body = bytearray()
+    async for chunk in request.stream():
+        if len(body) + len(chunk) > MAX_BYTES:
+            return error(413, f"사진이 {MAX_BYTES // 1024 // 1024}MB를 넘음")
+        body.extend(chunk)
     # 추론은 CPU를 몇백 ms 쓰므로 이벤트 루프 밖(스레드)에서 돌린다. /health가 그동안에도 답하게
-    return await run_in_threadpool(handle, body)
+    return await run_in_threadpool(handle, bytes(body))
 
 
 def handle(body: bytes):
@@ -109,7 +114,13 @@ def handle(body: bytes):
         return error(413, f"사진이 {MAX_BYTES // 1024 // 1024}MB를 넘음 ({len(body)} bytes)")
     if not body:
         return error(400, "본문이 비었음 (JPEG 바이트를 그대로 보낸다)")
-    image = cv2.imdecode(np.frombuffer(body, dtype=np.uint8), cv2.IMREAD_COLOR)
+    # imdecode는 PNG 등도 읽으므로 JPEG 시그니처를 먼저 확인한다.
+    if not body.startswith(b"\xff\xd8\xff"):
+        return error(400, "JPEG로 읽을 수 없음")
+    try:
+        image = cv2.imdecode(np.frombuffer(body, dtype=np.uint8), cv2.IMREAD_COLOR)
+    except cv2.error:
+        return error(400, "JPEG로 읽을 수 없음")
     if image is None:
         return error(400, "JPEG로 읽을 수 없음")
     if model["session"] is None:
