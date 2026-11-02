@@ -29,6 +29,7 @@ BUFFER_DIR = Path(os.environ.get("BUFFER_DIR", "/buffer"))
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "").rstrip("/")
 SUPABASE_KEY = os.environ.get("SUPABASE_SERVICE_KEY", "")
 RETRY_INTERVAL = float(os.environ.get("RETRY_INTERVAL", "30"))
+DEDUP_SECONDS = float(os.environ.get("DEDUP_SECONDS", "30"))  # 연속 위반 묶기 (계약 record-storage.md). 0이면 끔
 
 BUCKET = "violations"
 TABLE = "safety_logs"
@@ -46,6 +47,22 @@ retry_log = logging.getLogger("pi.uploader.retry")
 
 # 요청 처리와 재시도 작업이 같은 기록을 동시에 보내지 않게 한다
 send_lock = asyncio.Lock()
+
+# 장치별 직전 위반: (위반 종류(helmet, vest), 사람 수, 감지 시각). 재시작하면 비워진다
+last_violation: dict[str, tuple[tuple[bool, bool], int | None, datetime]] = {}
+
+
+def continues_last(device: str, kind: tuple[bool, bool], persons: int | None, at: datetime) -> tuple[bool, float]:
+    """직전 위반이 이어지는 중이면 (True, 간격 초). 묶든 안 묶든 직전 위반을 이번 것으로 바꾼다.
+    그래서 사람이 계속 서 있으면 30초가 지나도 한 건으로 남는다."""
+    prev = last_violation.get(device)
+    last_violation[device] = (kind, persons, at)
+    if DEDUP_SECONDS <= 0 or prev is None:
+        return False, 0.0
+    prev_kind, prev_persons, prev_at = prev
+    gap = abs((at - prev_at).total_seconds())
+    more_people = persons is not None and prev_persons is not None and persons > prev_persons
+    return gap <= DEDUP_SECONDS and kind == prev_kind and not more_people, gap
 
 
 class Rejected(Exception):
@@ -161,8 +178,9 @@ async def retry_loop(client: httpx.AsyncClient) -> None:
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     failed = len(list((BUFFER_DIR / "failed").glob("*.json"))) if (BUFFER_DIR / "failed").exists() else 0
-    log.info("시작 commit=%s supabase=%s pending=%d failed=%d retry_s=%g",
-             os.environ.get("COMMIT") or "unknown", configured(), buffered_count(), failed, RETRY_INTERVAL)
+    log.info("시작 commit=%s supabase=%s pending=%d failed=%d retry_s=%g dedup_s=%g",
+             os.environ.get("COMMIT") or "unknown", configured(), buffered_count(), failed, RETRY_INTERVAL,
+             DEDUP_SECONDS)
     if not configured():
         log.warning("SUPABASE_URL·SUPABASE_SERVICE_KEY 없음: 받은 기록은 버퍼에만 쌓는다")
         app.state.client = None
@@ -235,6 +253,11 @@ def parse_result(text: str) -> dict:
     if not isinstance(frame, str) or not DEVICE_ID.match(frame):
         frame = None
 
+    # 사진 속 사람 수 (선택). 연속 위반 묶기에만 쓴다. 틀리면 비교하지 않는다
+    persons = r.get("persons")
+    if isinstance(persons, bool) or not isinstance(persons, int) or persons < 0:
+        persons = None
+
     return {
         "created_at": at.astimezone(timezone.utc).isoformat(),
         "device_id": device_id,
@@ -242,6 +265,7 @@ def parse_result(text: str) -> dict:
         "has_vest": r["has_vest"],
         "confidence": confidence,
         "frame": frame,
+        "persons": persons,
     }
 
 
@@ -280,12 +304,21 @@ async def records(request: Request, result: str = Form(...), image: UploadFile =
     row = parse_result(result)
     data = await image.read()
     check_image(data)
+    persons = row.pop("persons")  # safety_logs 컬럼이 아니다
+    frame, device = row["frame"], row["device_id"]
+
+    continuing, gap = continues_last(device, (row["has_helmet"], row["has_vest"]), persons,
+                                     datetime.fromisoformat(row["created_at"]))
+    if continuing:
+        log.info("같은 위반 계속, 저장 안 함 frame=%s device=%s helmet=%s vest=%s persons=%s gap_s=%.1f",
+                 frame, device, str(row["has_helmet"]).lower(), str(row["has_vest"]).lower(), persons, gap)
+        return JSONResponse({"status": "skipped"}, status_code=202)
+
     rid = save_to_buffer(row, data)
 
     client = request.app.state.client
     # 재시도 작업이 보내는 중이면 기다리지 않는다. 기다리면 gateway 제한 시간(15초)을 넘을 수 있다.
     # 이 기록은 버퍼에 있으니 다음 재시도 때 올라간다.
-    frame, device = row["frame"], row["device_id"]
     if client is None:
         log.info("버퍼에 둠 frame=%s rid=%s device=%s reason=supabase_설정_없음", frame, rid, device)
     elif send_lock.locked():
