@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pi gateway API</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* API 문서. 색과 글꼴은 architecture.html과 같다. */
+:root {
+  --bg: #f2f4f6; --surface: #ffffff; --ink: #16202a; --muted: #5b6876; --line: #c9d1da;
+  --hivis: #d9480f; --ok: #2b7a4b; --fail: #c92a2a; --code-bg: #eaeef2; --head-bg: #eef2f6;
+  --font-body: "IBM Plex Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "Cascadia Code", Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #11161c; --surface: #18202a; --ink: #e6ebf0; --muted: #95a3b2; --line: #2e3a48;
+    --hivis: #ff8a3d; --ok: #5cc58a; --fail: #ff6b6b; --code-bg: #0d1217; --head-bg: #1d2631;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #11161c; --surface: #18202a; --ink: #e6ebf0; --muted: #95a3b2; --line: #2e3a48;
+  --hivis: #ff8a3d; --ok: #5cc58a; --fail: #ff6b6b; --code-bg: #0d1217; --head-bg: #1d2631;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.65; }
+.page {
+  max-width: 920px; margin: 0 auto; padding-block: 40px 72px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: flex; flex-direction: column; gap: 40px;
+}
+h1, h2, h3 { margin: 0; line-height: 1.3; text-wrap: balance; }
+h1 { font-size: 1.8rem; }
+h2 { font-size: 1.25rem; padding-bottom: 6px; border-bottom: 2px solid var(--ink); }
+h3 { font-size: 1rem; }
+p { margin: 0; max-width: 72ch; }
+ul { margin: 0; padding-left: 1.3em; }
+code { font-family: var(--font-mono); font-size: 0.86em; }
+:not(pre) > code { background: var(--code-bg); padding: 1px 5px; border-radius: 4px; overflow-wrap: anywhere; }
+pre { margin: 0; background: var(--code-bg); border-radius: 8px; padding: 12px 14px; overflow-x: auto; font-size: 0.92em; line-height: 1.55; }
+section { display: flex; flex-direction: column; gap: 14px; }
+.tape { height: 10px; width: 168px; background: repeating-linear-gradient(-45deg, var(--hivis) 0 12px, transparent 12px 20px); border-radius: 2px; }
+.lede { color: var(--muted); }
+.table-wrap { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; }
+table { border-collapse: collapse; width: 100%; font-size: 0.92rem; }
+th, td { text-align: left; vertical-align: top; padding: 8px 12px; border-bottom: 1px solid var(--line); }
+th { background: var(--head-bg); font-weight: 600; white-space: nowrap; }
+tr:last-child td { border-bottom: 0; }
+td code { white-space: nowrap; }
+.endpoint { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+.sig { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px; }
+.method { font-family: var(--font-mono); font-weight: 600; font-size: 0.85rem; color: #fff; background: var(--ink); padding: 2px 8px; border-radius: 4px; }
+.path { font-family: var(--font-mono); font-weight: 600; font-size: 1.05rem; }
+.tag { font-size: 0.8rem; color: var(--muted); }
+.ok { color: var(--ok); font-weight: 600; }
+.bad { color: var(--fail); font-weight: 600; }
+.warn { border-left: 4px solid var(--hivis); padding: 8px 12px; background: var(--surface); border-radius: 6px; }
+footer { color: var(--muted); font-size: 0.8rem; border-top: 1px solid var(--line); padding-top: 12px; }
+</style>
+</head>
+<body>
+<div class="page">
+
+<header style="display:flex;flex-direction:column;gap:12px">
+  <div class="tape" aria-hidden="true"></div>
+  <h1>Pi gateway API</h1>
+  <p class="lede">라즈베리 파이 gateway에 사진을 보내 안전모·조끼 판정을 받고, 결과를 조회하는 API.</p>
+</header>
+
+<section>
+  <h2>주소와 인증</h2>
+  <div class="table-wrap"><table>
+    <tr><th>어디서</th><th>기본 주소</th><th>토큰</th></tr>
+    <tr><td>Pi와 같은 네트워크</td><td><code>http://172.30.1.68:8001</code></td><td>필요 없음</td></tr>
+    <tr><td>인터넷 (그 밖의 곳)</td><td><code>https://rpi5.tail7377e4.ts.net</code></td><td><code>POST /frame</code>만 <code>X-Device-Token</code> 필요</td></tr>
+  </table></div>
+  <ul>
+    <li>토큰은 명수에게 개인 메시지로 받는다. 커밋하거나 공개 채널에 올리지 않는다.</li>
+    <li>장치 ID: 팀원 ESP32는 <code>cam-&lt;이름&gt;</code>, 시험 전송은 <code>test-&lt;아무거나&gt;</code>.</li>
+  </ul>
+  <p class="warn">위반으로 판정된 사진은 실제 Supabase에 저장되고 웹에 나온다. 시험할 때는 <code>test-</code> 장치 ID를 쓴다.</p>
+</section>
+
+<section>
+  <h2>엔드포인트</h2>
+
+  <div class="endpoint">
+    <div class="sig"><span class="method">POST</span><span class="path">/frame</span><span class="tag">사진 보내기 (판정 요청)</span></div>
+    <div class="table-wrap"><table>
+      <tr><th>헤더</th><th>필수</th><th>값</th></tr>
+      <tr><td><code>Content-Type</code></td><td>예</td><td><code>image/jpeg</code></td></tr>
+      <tr><td><code>X-Device-Id</code></td><td>예</td><td>영문·숫자·<code>-</code>·<code>_</code>, 1~64자</td></tr>
+      <tr><td><code>X-Device-Token</code></td><td>인터넷이면 예</td><td>팀 공용 토큰</td></tr>
+      <tr><td><code>X-Person-Score</code>, <code>X-Person-Count</code></td><td>아니오</td><td>ESP32 사람 감지 점수(0~1)와 사람 수. 기록만 한다</td></tr>
+    </table></div>
+    <p>본문은 JPEG 바이트 그대로 (multipart 아님), 2MB 이하. 바로 <code>202</code>로 답하고 판정은 뒤에서 한다.</p>
+    <pre>curl -H "X-Device-Id: test-woojin" -H "X-Device-Token: &lt;토큰&gt;" -H "Content-Type: image/jpeg" \
+     --data-binary @사진.jpg https://rpi5.tail7377e4.ts.net/frame
+
+{"status": "queued", "queue": 1}</pre>
+  </div>
+
+  <div class="endpoint">
+    <div class="sig"><span class="method">GET</span><span class="path">/recent?device_id=</span><span class="tag">최근 판정 결과 50건 (최근 것부터)</span></div>
+    <pre>curl "https://rpi5.tail7377e4.ts.net/recent?device_id=test-woojin"
+
+{"items": [{
+  "device_id": "test-woojin", "received_at": "2026-11-02T04:22:10.873519+00:00",
+  "verdict": "fail", "has_helmet": false, "has_vest": false, "confidence": 0.966,
+  "upload": "stored", "infer_ms": 454, "wait_ms": 0, "total_ms": 3373,
+  "person_score": null, "person_count": null
+}]}</pre>
+    <div class="table-wrap"><table>
+      <tr><th>필드</th><th>값</th></tr>
+      <tr><td><code>verdict</code></td><td><code>fail</code> 위반 · <code>pass</code> 정상 · <code>no_person</code> 사람 없음 · <code>error</code> 판정 실패</td></tr>
+      <tr><td><code>upload</code></td><td><code>stored</code> Supabase 저장 · <code>buffered</code> Pi에 보관 후 나중에 저장 · <code>error</code> 저장 실패 · <code>null</code> 위반 아님</td></tr>
+      <tr><td><code>has_helmet</code>, <code>has_vest</code>, <code>confidence</code>, <code>infer_ms</code></td><td>판정 결과 (판정 실패면 없음)</td></tr>
+      <tr><td><code>received_at</code></td><td>받은 시각, UTC</td></tr>
+    </table></div>
+    <p>gateway를 다시 시작하면 비워진다. 오래 남길 기록은 Supabase와 웹에서 본다.</p>
+  </div>
+
+  <div class="endpoint">
+    <div class="sig"><span class="method">GET</span><span class="path">/health</span><span class="tag">상태 확인</span></div>
+    <pre>{"service": "gateway", "status": "ok", "queue": 0, "queue_max": 4,
+ "stats": {"received": 18, "verdict_fail": 11, "verdict_pass": 5, "upload_stored": 1, "unauthorized": 2}}</pre>
+    <p><code>queue</code>가 <code>queue_max</code>와 같으면 새 사진은 <code>503</code>으로 거절된다. <code>stats</code>는 시작 후 누적 건수.</p>
+  </div>
+</section>
+
+<section>
+  <h2>응답 코드 (<code>POST /frame</code>)</h2>
+  <div class="table-wrap"><table>
+    <tr><th>코드</th><th>뜻</th><th>할 일</th></tr>
+    <tr><td><span class="ok">202</span></td><td>받음 (대기 줄에 넣음)</td><td><code>/recent</code>로 결과 확인</td></tr>
+    <tr><td><span class="bad">400</span></td><td>장치 ID 형식이 틀림, 본문이 JPEG가 아님</td><td><code>detail</code>을 보고 고친다</td></tr>
+    <tr><td><span class="bad">401</span></td><td>인터넷 요청인데 토큰이 없거나 틀림</td><td>토큰 확인</td></tr>
+    <tr><td><span class="bad">413</span></td><td>2MB 초과</td><td>해상도·품질을 낮춘다</td></tr>
+    <tr><td><span class="bad">503</span></td><td>대기 줄이 가득 참</td><td>버리고 다음 사진을 보낸다</td></tr>
+  </table></div>
+  <p>오류 본문: <code>{"status": "rejected" | "busy", "detail": "&lt;이유&gt;"}</code></p>
+</section>
+
+<footer>2026-11-02 · Pi <code>dev</code> <code>09a4208</code> 기준 · 계약 원문: <code>docs/contracts/frame.md</code> · 코드: <code>pi/gateway/main.py</code></footer>
+
+</div>
+</body>
+</html>
