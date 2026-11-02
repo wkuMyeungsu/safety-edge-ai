@@ -21,9 +21,7 @@ curl -fL https://github.com/wkuMyeungsu/safety-edge-ai/releases/download/model-v
 python pi/models/verify_onnx.py pi/models/ppe_yolov8.onnx --sha256 0471240ce41e89bc0e58daf0b12d33102d6a70db5bad611f90533f6d3402cb17
 ```
 
-## 기존 후보 재현
-
-### 선택적 속도 최적화 후보: 576 입력
+## 선택적 속도 최적화 후보: 576 입력
 
 [model-v1-576](https://github.com/wkuMyeungsu/safety-edge-ai/releases/tag/model-v1-576)은 기존 SafeSight 원본 가중치를 **576×576 FP32, opset 17**로 다시 내보낸 후보이다. 640 배포본과 `model-v1`은 보존한다. 서버는 모델의 정적 입력 크기를 읽으므로 추론 코드·판정 임계값·기대 정답 변경 없이 사용할 수 있다. 모델 파일만 자동으로 교체하지는 않는다.
 
@@ -54,7 +52,38 @@ python pi/models/verify_onnx.py pi/models/optimized-576/ppe_yolov8.onnx \
 
 576 컨테이너 측정에는 아래 도구의 `--model pi/models/optimized-576/ppe_yolov8.onnx --manifest pi/models/model-v1-576.json`을 지정한다. 런타임 기본값 `ORT_THREADS=3`, `ORT_SPINNING=1`은 유지한다.
 
-## 기존 640 후보 재현
+### ARM64 QEMU에서 640과 576 비교
+
+공개 Release에서 다운로드한 파일의 SHA256을 확인하고 실행했다. [576 원본 결과](reports/arm64-qemu-576-2026-11-02.json)의 코드 커밋은 `ff295b6fc44e0f85f8b1dffc809e5d30f594ad6b`이다. [기존 640 측정](reports/arm64-qemu-2026-11-02.json)과 같은 호스트·QEMU·Python·패키지 버전, CPU quota 3, ORT 스레드 3, spinning 활성, 메모리 1 GiB, swap 0 조건이다. 각 실행은 사진별 예열 1회 + 측정 5회(20회), 동시 요청 2건을 수행했다.
+
+| 항목 | 기존 640 | 최적화 후보 576 |
+|---|---:|---:|
+| 서버 추론 중앙값 | 26,335 ms | 20,997.5 ms |
+| 서버 추론 P95 | 26,955 ms | 21,302 ms |
+| 서버 추론 최대 | 27,052 ms | 21,359 ms |
+| HTTP 왕복 중앙값 | 26,399.622 ms | 21,039.283 ms |
+| cgroup 최대 메모리 | 304,185,344 bytes (290.094 MiB) | 374,820,864 bytes (357.457 MiB) |
+| OOM / OOM kill | 0 / 0 | 0 / 0 |
+| 동시 요청 중 상태 응답 | 2개 대기, 6.838 ms | 2개 대기, 7.501 ms |
+| 측정·예열·동시 요청 기대 판정 | 모두 일치 | 모두 일치 |
+
+중앙값은 약 **20.3% 감소**했다. 사진별 예열 응답의 `verdict`, `has_helmet`, `has_vest`, `persons`도 기존 640 결과와 직접 대조해 모두 일치했다. 점수와 좌표는 해상도에 따라 달라지므로 동일하다고 주장하지 않는다.
+
+속도 개선과 함께 **이번 cgroup 최대 메모리는 67.363 MiB 증가**했다. 두 값 모두 컨테이너 전체 생명주기의 메모리이며 QEMU·모델 로드·해시 확인·계측 비용을 포함한다. 순수 ONNX 메모리나 실물 Pi의 메모리로 해석하지 않는다. 두 모델 모두 1 GiB 제한 내에서 완료됐다. 이 수치는 QEMU 가상 실행 결과이며 Pi 5 속도로 환산할 수 없다.
+
+576 재현 명령(현재 커밋 라벨로 ARM64 이미지를 빌드한 뒤):
+
+```bash
+python3 pi/models/run_container_benchmark.py \
+  --image safety-edge-ai/inference:arm64-benchmark \
+  --model pi/models/optimized-576/ppe_yolov8.onnx \
+  --manifest pi/models/model-v1-576.json \
+  --server-label "실제 호스트 CPU / OS / QEMU 버전" \
+  --ort-threads 3 --ort-spinning 1 --repeats 5 --parallel 2 \
+  --output arm64-576-result.json
+```
+
+## 이전 Hansung 후보 재현
 
 기존 문서의 [Hansung-Cho/yolov8-ppe-detection](https://huggingface.co/Hansung-Cho/yolov8-ppe-detection)을 같은 가중치로 검증한다. 현장 모델 채택과 Pi 성능 측정은 별도다.
 

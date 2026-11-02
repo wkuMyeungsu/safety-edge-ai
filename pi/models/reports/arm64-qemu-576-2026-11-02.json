@@ -1,0 +1,571 @@
+{
+  "measured_at_utc": "2026-11-02T06:23:08.115300+00:00",
+  "code_commit": "ff295b6fc44e0f85f8b1dffc809e5d30f594ad6b",
+  "server_label": "Intel Core Ultra 7 258V / Windows 11 / WSL2 Ubuntu 26.04 / QEMU aarch64 10.2.1 / FP32 576 / ORT_THREADS=3 ORT_SPINNING=1; not Pi hardware",
+  "client_platform": "Linux-6.6.114.1-microsoft-standard-WSL2-x86_64-with-glibc2.43",
+  "model_sha256_local": "85533d8ef50e65435e5b7d9dfb7d87f5f0aa604469ffe222a471ae17648bd2f2",
+  "model_identity_note": "서버 /health의 이름·클래스와 로컬 파일 해시를 확인함. 서버 파일의 해시는 HTTP로 제공되지 않으므로 MODEL_PATH를 별도로 확인해야 함.",
+  "health": {
+    "service": "inference",
+    "status": "ok",
+    "model_loaded": true,
+    "model": "ppe_yolov8.onnx",
+    "classes": [
+      "Boots",
+      "Ear-Protection",
+      "Glass",
+      "Glove",
+      "Hard_hat",
+      "Mask",
+      "No-Boots",
+      "No-Ear-Protection",
+      "No-Glass",
+      "No-Glove",
+      "No-Helmet",
+      "No-Mask",
+      "No-Vest",
+      "Worker",
+      "Vest",
+      "Circular_Saw",
+      "Fire_Extinguisher",
+      "Fire_prevention_Net",
+      "Welding_Equipment"
+    ],
+    "error": null
+  },
+  "warmup_per_image": 1,
+  "repeats_per_image": 5,
+  "http": {
+    "count": 20,
+    "median_ms": 21039.283,
+    "p95_ms": 21317.67,
+    "max_ms": 21427.176
+  },
+  "inference": {
+    "count": 20,
+    "median_ms": 20997.5,
+    "p95_ms": 21302,
+    "max_ms": 21359
+  },
+  "concurrency": {
+    "requests": 2,
+    "pending_at_health": 2,
+    "health_ms": 7.501,
+    "all_predictions_match": true
+  },
+  "cases": [
+    {
+      "image": "blank.jpg",
+      "expected": {
+        "verdict": "no_person",
+        "persons": 0
+      },
+      "samples": [
+        {
+          "http_ms": 21009.546,
+          "infer_ms": 20991
+        },
+        {
+          "http_ms": 20994.504,
+          "infer_ms": 20979
+        },
+        {
+          "http_ms": 21122.646,
+          "infer_ms": 21106
+        },
+        {
+          "http_ms": 20855.69,
+          "infer_ms": 20839
+        },
+        {
+          "http_ms": 21067.249,
+          "infer_ms": 21051
+        }
+      ],
+      "prediction": {
+        "verdict": "no_person",
+        "has_helmet": true,
+        "has_vest": true,
+        "confidence": 0.0,
+        "persons": 0,
+        "detections": [],
+        "image": {
+          "width": 640,
+          "height": 480
+        },
+        "model": "ppe_yolov8.onnx",
+        "infer_ms": 22328
+      },
+      "http": {
+        "count": 5,
+        "median_ms": 21009.546,
+        "p95_ms": 21122.646,
+        "max_ms": 21122.646
+      },
+      "inference": {
+        "count": 5,
+        "median_ms": 20991,
+        "p95_ms": 21106,
+        "max_ms": 21106
+      }
+    },
+    {
+      "image": "test_11.jpg",
+      "expected": {
+        "verdict": "pass",
+        "has_helmet": true,
+        "has_vest": true
+      },
+      "samples": [
+        {
+          "http_ms": 21056.439,
+          "infer_ms": 21040
+        },
+        {
+          "http_ms": 20781.544,
+          "infer_ms": 20765
+        },
+        {
+          "http_ms": 20900.682,
+          "infer_ms": 20882
+        },
+        {
+          "http_ms": 21317.67,
+          "infer_ms": 21302
+        },
+        {
+          "http_ms": 20862.296,
+          "infer_ms": 20846
+        }
+      ],
+      "prediction": {
+        "verdict": "pass",
+        "has_helmet": true,
+        "has_vest": true,
+        "confidence": 0.693,
+        "persons": 1,
+        "detections": [
+          {
+            "label": "Worker",
+            "score": 0.857,
+            "box": [
+              95,
+              59,
+              326,
+              416
+            ]
+          },
+          {
+            "label": "Hard_hat",
+            "score": 0.693,
+            "box": [
+              172,
+              87,
+              250,
+              159
+            ]
+          },
+          {
+            "label": "Vest",
+            "score": 0.682,
+            "box": [
+              127,
+              183,
+              311,
+              416
+            ]
+          },
+          {
+            "label": "Glove",
+            "score": 0.622,
+            "box": [
+              283,
+              224,
+              317,
+              267
+            ]
+          }
+        ],
+        "image": {
+          "width": 416,
+          "height": 416
+        },
+        "model": "ppe_yolov8.onnx",
+        "infer_ms": 22297
+      },
+      "http": {
+        "count": 5,
+        "median_ms": 20900.682,
+        "p95_ms": 21317.67,
+        "max_ms": 21317.67
+      },
+      "inference": {
+        "count": 5,
+        "median_ms": 20882,
+        "p95_ms": 21302,
+        "max_ms": 21302
+      }
+    },
+    {
+      "image": "test_0.jpg",
+      "expected": {
+        "verdict": "fail",
+        "has_helmet": false,
+        "has_vest": false
+      },
+      "samples": [
+        {
+          "http_ms": 21205.936,
+          "infer_ms": 21140
+        },
+        {
+          "http_ms": 21123.873,
+          "infer_ms": 21060
+        },
+        {
+          "http_ms": 21427.176,
+          "infer_ms": 21359
+        },
+        {
+          "http_ms": 21063.706,
+          "infer_ms": 21000
+        },
+        {
+          "http_ms": 21022.127,
+          "infer_ms": 20959
+        }
+      ],
+      "prediction": {
+        "verdict": "fail",
+        "has_helmet": false,
+        "has_vest": false,
+        "confidence": 0.969,
+        "persons": 1,
+        "detections": [
+          {
+            "label": "No-Vest",
+            "score": 0.969,
+            "box": [
+              4,
+              1254,
+              1075,
+              1920
+            ]
+          },
+          {
+            "label": "Worker",
+            "score": 0.917,
+            "box": [
+              6,
+              313,
+              1073,
+              1916
+            ]
+          },
+          {
+            "label": "No-Helmet",
+            "score": 0.716,
+            "box": [
+              253,
+              305,
+              920,
+              658
+            ]
+          },
+          {
+            "label": "No-Mask",
+            "score": 0.701,
+            "box": [
+              372,
+              907,
+              825,
+              1178
+            ]
+          },
+          {
+            "label": "No-Glass",
+            "score": 0.682,
+            "box": [
+              371,
+              692,
+              845,
+              862
+            ]
+          },
+          {
+            "label": "No-Ear-Protection",
+            "score": 0.646,
+            "box": [
+              281,
+              706,
+              382,
+              929
+            ]
+          }
+        ],
+        "image": {
+          "width": 1080,
+          "height": 1920
+        },
+        "model": "ppe_yolov8.onnx",
+        "infer_ms": 21017
+      },
+      "http": {
+        "count": 5,
+        "median_ms": 21123.873,
+        "p95_ms": 21427.176,
+        "max_ms": 21427.176
+      },
+      "inference": {
+        "count": 5,
+        "median_ms": 21060,
+        "p95_ms": 21359,
+        "max_ms": 21359
+      }
+    },
+    {
+      "image": "test_26.jpg",
+      "expected": {
+        "verdict": "fail",
+        "has_helmet": true,
+        "has_vest": false
+      },
+      "samples": [
+        {
+          "http_ms": 21007.226,
+          "infer_ms": 20995
+        },
+        {
+          "http_ms": 20908.957,
+          "infer_ms": 20896
+        },
+        {
+          "http_ms": 21213.823,
+          "infer_ms": 21201
+        },
+        {
+          "http_ms": 20824.859,
+          "infer_ms": 20813
+        },
+        {
+          "http_ms": 21245.884,
+          "infer_ms": 21232
+        }
+      ],
+      "prediction": {
+        "verdict": "fail",
+        "has_helmet": true,
+        "has_vest": false,
+        "confidence": 0.776,
+        "persons": 1,
+        "detections": [
+          {
+            "label": "Hard_hat",
+            "score": 0.849,
+            "box": [
+              206,
+              139,
+              270,
+              200
+            ]
+          },
+          {
+            "label": "No-Vest",
+            "score": 0.776,
+            "box": [
+              211,
+              247,
+              270,
+              358
+            ]
+          },
+          {
+            "label": "No-Ear-Protection",
+            "score": 0.727,
+            "box": [
+              241,
+              195,
+              262,
+              225
+            ]
+          },
+          {
+            "label": "Worker",
+            "score": 0.622,
+            "box": [
+              155,
+              133,
+              270,
+              360
+            ]
+          },
+          {
+            "label": "No-Mask",
+            "score": 0.521,
+            "box": [
+              213,
+              213,
+              262,
+              243
+            ]
+          },
+          {
+            "label": "No-Glass",
+            "score": 0.438,
+            "box": [
+              210,
+              192,
+              235,
+              211
+            ]
+          }
+        ],
+        "image": {
+          "width": 270,
+          "height": 360
+        },
+        "model": "ppe_yolov8.onnx",
+        "infer_ms": 20919
+      },
+      "http": {
+        "count": 5,
+        "median_ms": 21007.226,
+        "p95_ms": 21245.884,
+        "max_ms": 21245.884
+      },
+      "inference": {
+        "count": 5,
+        "median_ms": 20995,
+        "p95_ms": 21232,
+        "max_ms": 21232
+      }
+    }
+  ],
+  "virtual_environment": {
+    "is_raspberry_pi_hardware": false,
+    "interpretation": "ARM64 컨테이너 실행 검증. QEMU/호스트 CPU의 시간·메모리이므로 Pi 5 성능으로 환산할 수 없음.",
+    "image_id": "sha256:06d1b6ab28012f7b07c4836139f6f6ef33b68cdd742d5fadc6b33d22a8749c0f",
+    "image_revision": "ff295b6fc44e0f85f8b1dffc809e5d30f594ad6b",
+    "platform": "linux/arm64",
+    "container_identity": {
+      "machine": "aarch64",
+      "python": "3.12.16 (main, Oct 28 2026, 02:07:05) [GCC 14.2.0]",
+      "model_sha256": "85533d8ef50e65435e5b7d9dfb7d87f5f0aa604469ffe222a471ae17648bd2f2",
+      "code_sha256": {
+        "detector.py": "02e1d1980c266894927721c96a0ec5dd51bc05d46549a1747d29eb0da58363fd",
+        "model_spec.py": "56833b7b81fca30623e0bfaabb8c08103c617bc7e77bdb31c24c2765c56c5911",
+        "main.py": "61cd6b2a9c9a96103c77d2067b2bb7223f5baaa315d77afb47907f388be5b0d3"
+      },
+      "requirements_sha256": "100124d42ac6d0ce7e22c7dbc4f0a4997e648932b31852926370b4fd433d0e8c",
+      "packages": {
+        "onnxruntime": "1.20.1",
+        "numpy": "2.1.3",
+        "opencv-python-headless": "4.10.0.84",
+        "fastapi": "0.115.6",
+        "uvicorn": "0.34.0"
+      }
+    },
+    "docker_server": {
+      "Platform": {
+        "Name": ""
+      },
+      "Version": "29.1.3",
+      "ApiVersion": "1.52",
+      "MinAPIVersion": "1.44",
+      "Os": "linux",
+      "Arch": "amd64",
+      "Components": [
+        {
+          "Name": "Engine",
+          "Version": "29.1.3",
+          "Details": {
+            "ApiVersion": "1.52",
+            "Arch": "amd64",
+            "BuildTime": "Wed Apr 29 16:40:20 2026",
+            "Experimental": "false",
+            "GitCommit": "29.1.3-0ubuntu4.1",
+            "GoVersion": "go1.24.13",
+            "KernelVersion": "6.6.114.1-microsoft-standard-WSL2",
+            "MinAPIVersion": "1.44",
+            "Os": "linux"
+          }
+        },
+        {
+          "Name": "containerd",
+          "Version": "2.2.2",
+          "Details": {
+            "GitCommit": ""
+          }
+        },
+        {
+          "Name": "runc",
+          "Version": "1.4.0-0ubuntu1",
+          "Details": {
+            "GitCommit": ""
+          }
+        },
+        {
+          "Name": "docker-init",
+          "Version": "0.19.0",
+          "Details": {
+            "GitCommit": ""
+          }
+        }
+      ],
+      "GitCommit": "29.1.3-0ubuntu4.1",
+      "GoVersion": "go1.24.13",
+      "KernelVersion": "6.6.114.1-microsoft-standard-WSL2",
+      "BuildTime": "2026-04-29T16:40:20.000000000+00:00"
+    },
+    "limits": {
+      "memory_bytes": 1073741824,
+      "memory_swap_bytes": 1073741824,
+      "nano_cpus": 3000000000,
+      "ort_threads": 3,
+      "ort_spinning_override": "1"
+    },
+    "memory_before": {
+      "memory.current": 284102656,
+      "memory.peak": 332570624,
+      "memory.max": 1073741824,
+      "memory.swap.max": 0,
+      "memory.events": {
+        "low": 0,
+        "high": 0,
+        "max": 0,
+        "oom": 0,
+        "oom_kill": 0,
+        "oom_group_kill": 0
+      },
+      "cpu.max": "300000 100000",
+      "process_status": {
+        "Name": "python",
+        "VmHWM": "240524 kB",
+        "VmRSS": "239980 kB",
+        "Threads": "11"
+      }
+    },
+    "memory_after": {
+      "memory.current": 374345728,
+      "memory.peak": 374820864,
+      "memory.max": 1073741824,
+      "memory.swap.max": 0,
+      "memory.events": {
+        "low": 0,
+        "high": 0,
+        "max": 0,
+        "oom": 0,
+        "oom_kill": 0,
+        "oom_group_kill": 0
+      },
+      "cpu.max": "300000 100000",
+      "process_status": {
+        "Name": "python",
+        "VmHWM": "327436 kB",
+        "VmRSS": "326476 kB",
+        "Threads": "14"
+      }
+    },
+    "memory_note": "cgroup v2 바이트 단위. memory.peak는 컨테이너 시작부터 모델 로드·해시 확인·추론·계측 보조 프로세스를 포함한 최대값. QEMU 실행 시 그 비용도 포함. memory.current는 순간값이며 Docker working set이나 모델 파일 크기와 다름. process_status는 PID 1의 /proc 값으로 QEMU 환경에서 네이티브 Pi RSS로 해석하지 않음."
+  }
+}
