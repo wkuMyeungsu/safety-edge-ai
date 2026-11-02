@@ -94,3 +94,24 @@ python pi/models/run_http_smoke.py --url http://127.0.0.1:8003 \
 - 보고서에는 코드 커밋, 로컬 모델 SHA256, 원본 판정 JSON, 개별 측정값, 중앙값·P95·최댓값이 들어 있다. HTTP 시간은 전체 왕복 시간, `infer_ms`는 서버 전처리부터 판정까지의 시간이다. 비동기 대기 시간과 JPEG 디코딩 시간은 `infer_ms`에 포함하지 않는다.
 - `/health`는 서버 파일 해시를 제공하지 않는다. 도구는 이름·클래스와 로컬 파일 해시만 대조하므로 서버의 `MODEL_PATH`가 해당 파일인지 직접 확인해야 한다.
 - [2026-11-02 PC 실행 결과](reports/http-smoke-2026-11-02-pc.json): 40회 기대 판정 일치, 추론 중앙값 176.5ms/P95 301ms, 48개 동시 요청 중 상태 응답 3.766ms. 이 값은 Windows PC 결과이며 Pi 성능이나 현장 정확도 평가가 아니다.
+
+## 실물 없이 ARM64 컨테이너에서 측정
+
+`run_container_benchmark.py`는 실제 ONNX 서버를 Linux ARM64 컨테이너에서 실행한다. x86 PC에서는 QEMU/binfmt가 준비된 Docker가 필요하다. Windows에서는 WSL 내부에서 Linux Docker Engine과 이 도구를 함께 실행할 수도 있다. 컨테이너는 Pi Compose와 같은 메모리 1 GiB, ORT 스레드 3개를 사용하며 CPU quota 3개, swap 0으로 제한한다. 이 CPU quota는 Pi 5의 코어 성능이나 클럭을 재현하지 않는다.
+
+추론 코드와 측정 도구를 커밋한 뒤 저장소 루트에서 실행한다. Python은 표준 라이브러리만 필요하다. Docker CLI가 로컬 Linux 엔진에 연결되어 있어야 하며 cgroup v2를 사용한다.
+
+```bash
+docker build --platform linux/arm64 \
+  --label org.opencontainers.image.revision="$(git rev-parse HEAD)" \
+  -t safety-edge-ai/inference:arm64-benchmark pi/inference
+python3 pi/models/run_container_benchmark.py \
+  --image safety-edge-ai/inference:arm64-benchmark \
+  --server-label "실제 호스트 CPU / OS / QEMU 버전" \
+  --repeats 5 --parallel 2 --output arm64-benchmark.json
+```
+
+- 이미지의 아키텍처·커밋 라벨과 컨테이너 내부 Python 코드·requirements·ONNX의 SHA256을 확인한다. 기존 HTTP 판정 검사를 재사용하며, 기본 20회 측정과 사진별 예열 4회, 동시 요청 2회를 실행한다.
+- 포트는 `127.0.0.1`에 임의 배정한다. 다른 서비스는 실행하지 않으며, 도구가 만든 컨테이너만 종료·제거한다. 이미지와 출력 보고서는 보관한다.
+- `memory.current`와 `memory.peak`는 cgroup 전체 사용량이다. peak는 모델 로드와 계측 보조 프로세스까지 포함하며, QEMU 환경에서는 에뮬레이터 비용도 포함한다. 모델 파일 크기나 순수 ONNX 메모리와는 다르다. OOM 발생과 메모리·swap 제한도 검사한다.
+- QEMU 결과는 ARM64 실행 호환성과 제한된 메모리에서의 동작을 확인하는 값이다. **실제 Pi 5의 추론 속도·메모리로 보고하거나 환산하지 않는다.** 실물 측정과 ESP32 연결 검증은 여전히 별도다.
