@@ -6,9 +6,9 @@
 """
 
 import ast
+import asyncio
 import logging
 import os
-import threading
 import time
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -33,7 +33,7 @@ MAX_BYTES = 2 * 1024 * 1024  # 계약: 최대 2MB
 
 log = logging.getLogger("inference")
 model = {"session": None, "input": None, "size": None, "classes": [], "categories": {}, "error": None}
-run_lock = threading.Lock()  # 한 번에 한 장씩 (Pi CPU를 나눠 쓰지 않게)
+predict_lock = asyncio.Lock()  # 기다리는 요청은 작업 스레드를 차지하지 않는다.
 
 
 def class_names(session: ort.InferenceSession) -> list[str]:
@@ -86,7 +86,7 @@ def error(code: int, detail: str) -> JSONResponse:
 
 
 @app.get("/health")
-def health():
+async def health():
     return {
         "service": SERVICE,
         "status": "ok",
@@ -106,7 +106,8 @@ async def predict(request: Request):
             return error(413, f"사진이 {MAX_BYTES // 1024 // 1024}MB를 넘음")
         body.extend(chunk)
     # 추론은 CPU를 몇백 ms 쓰므로 이벤트 루프 밖(스레드)에서 돌린다. /health가 그동안에도 답하게
-    return await run_in_threadpool(handle, bytes(body))
+    async with predict_lock:
+        return await run_in_threadpool(handle, bytes(body))
 
 
 def handle(body: bytes):
@@ -128,8 +129,7 @@ def handle(body: bytes):
     started = time.perf_counter()
     height, width = image.shape[:2]
     blob, r, left, top = preprocess(image, model["size"])
-    with run_lock:
-        output = model["session"].run(None, {model["input"]: blob})[0]
+    output = model["session"].run(None, {model["input"]: blob})[0]
     detections = decode(output, model["classes"], r, left, top, width, height, CONF_THRES, IOU_THRES)
     result = judge(detections, model["categories"])
     result.update(detections=detections, image={"width": width, "height": height}, model=MODEL_PATH.name,
