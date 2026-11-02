@@ -26,9 +26,33 @@ def test_not_a_jpeg_is_400(inference_url):
     assert r.status_code == 400
 
 
+@pytest.mark.parametrize("body", [
+    # 읽을 수 있는 1x1 PNG도 계약상 JPEG가 아니므로 거부한다.
+    base64.b64decode("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAACklEQVQIHWMAAgAABAABDTukuQAAAABJRU5ErkJggg=="),
+    b"\xff\xd8\xffbroken jpeg",
+])
+def test_other_image_formats_and_broken_jpeg_are_400(inference_url, body):
+    r = predict(inference_url, body)
+    assert r.status_code == 400
+    assert r.json()["detail"]
+
+
 def test_over_2mb_is_413(inference_url):
     r = predict(inference_url, TINY_JPEG + b"\0" * (2 * 1024 * 1024))
     assert r.status_code == 413
+
+
+def test_chunked_over_2mb_is_413(inference_url):
+    chunks = (b"\0" * 65536 for _ in range(33))
+    r = predict(inference_url, chunks)
+    assert r.status_code == 413
+    assert r.json()["detail"]
+
+
+def test_exactly_2mb_is_not_rejected_as_too_large(inference_url):
+    body = TINY_JPEG + b"\0" * (2 * 1024 * 1024 - len(TINY_JPEG))
+    r = predict(inference_url, body)
+    assert r.status_code in (200, 503), r.text
 
 
 def test_without_model_is_503(inference_url):
