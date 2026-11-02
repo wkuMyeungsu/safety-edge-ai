@@ -8,6 +8,8 @@
 import ast
 import logging
 import os
+import threading
+import time
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -16,16 +18,22 @@ import numpy as np
 import onnxruntime as ort
 import uvicorn
 from fastapi import FastAPI, Request
+from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import JSONResponse
+
+from detector import categorize, decode, judge, preprocess
 
 SERVICE = os.environ.get("SERVICE_NAME", "inference")
 PORT = int(os.environ.get("PORT", "8003"))
 MODEL_PATH = Path(os.environ.get("MODEL_PATH", "/models/ppe_yolov8.onnx"))
 ORT_THREADS = int(os.environ.get("ORT_THREADS", "3"))
+CONF_THRES = float(os.environ.get("CONF_THRES", "0.4"))
+IOU_THRES = float(os.environ.get("IOU_THRES", "0.45"))
 MAX_BYTES = 2 * 1024 * 1024  # 계약: 최대 2MB
 
 log = logging.getLogger("inference")
-model = {"session": None, "input": None, "size": None, "classes": [], "error": None}
+model = {"session": None, "input": None, "size": None, "classes": [], "categories": {}, "error": None}
+run_lock = threading.Lock()  # 한 번에 한 장씩 (Pi CPU를 나눠 쓰지 않게)
 
 
 def class_names(session: ort.InferenceSession) -> list[str]:
@@ -49,9 +57,16 @@ def load_model() -> None:
         options.graph_optimization_level = ort.GraphOptimizationLevel.ORT_ENABLE_ALL
         session = ort.InferenceSession(str(MODEL_PATH), options, providers=["CPUExecutionProvider"])
         inp = session.get_inputs()[0]
+        classes = class_names(session)
+        categories = {classes[i]: c for i, c in categorize(classes).items()}
+        found = set(categories.values())
+        if not ({"helmet", "no_helmet"} & found and {"vest", "no_vest"} & found):
+            model["error"] = f"안전모·조끼를 판정할 수 없는 모델: 클래스 {classes}"
+            log.error(model["error"])
+            return
         model.update(session=session, input=inp.name, size=int(inp.shape[-1]) if isinstance(inp.shape[-1], int) else 640,
-                     classes=class_names(session), error=None)
-        log.info("모델 불러옴: %s, 입력 %s %s, 클래스 %s", MODEL_PATH.name, inp.name, inp.shape, model["classes"])
+                     classes=classes, categories=categories, error=None)
+        log.info("모델 불러옴: %s, 입력 %s %s, 판정에 쓰는 클래스 %s", MODEL_PATH.name, inp.name, inp.shape, categories)
     except Exception as e:  # 깨진 파일 등: 서버는 살아 있고 /predict만 503
         model["error"] = f"모델을 불러오지 못함: {e.__class__.__name__}: {e}"
         log.error(model["error"])
@@ -85,6 +100,11 @@ def health():
 @app.post("/predict")
 async def predict(request: Request):
     body = await request.body()
+    # 추론은 CPU를 몇백 ms 쓰므로 이벤트 루프 밖(스레드)에서 돌린다. /health가 그동안에도 답하게
+    return await run_in_threadpool(handle, body)
+
+
+def handle(body: bytes):
     if len(body) > MAX_BYTES:
         return error(413, f"사진이 {MAX_BYTES // 1024 // 1024}MB를 넘음 ({len(body)} bytes)")
     if not body:
@@ -94,7 +114,18 @@ async def predict(request: Request):
         return error(400, "JPEG로 읽을 수 없음")
     if model["session"] is None:
         return error(503, model["error"] or "모델이 없음")
-    return error(501, "판정은 아직 구현 전")  # 다음 PR에서 YOLOv8 결과 해석과 판정을 넣는다
+    started = time.perf_counter()
+    height, width = image.shape[:2]
+    blob, r, left, top = preprocess(image, model["size"])
+    with run_lock:
+        output = model["session"].run(None, {model["input"]: blob})[0]
+    detections = decode(output, model["classes"], r, left, top, width, height, CONF_THRES, IOU_THRES)
+    result = judge(detections, model["categories"])
+    result.update(detections=detections, image={"width": width, "height": height}, model=MODEL_PATH.name,
+                  infer_ms=round((time.perf_counter() - started) * 1000))
+    log.info("판정 %s (helmet=%s vest=%s, 사람 %d, %dms)", result["verdict"], result["has_helmet"], result["has_vest"],
+             result["persons"], result["infer_ms"])
+    return result
 
 
 if __name__ == "__main__":
