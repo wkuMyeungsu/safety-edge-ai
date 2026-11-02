@@ -7,15 +7,17 @@
 1. `README.md`: 파트·담당, 실행 방법, 브랜치 규칙
 2. `docs/architecture.html`: 장비·컨테이너 구조와 처리 순서
 3. `docs/contracts/`: 파트 사이에 주고받는 데이터 형식
-4. 작업할 파트의 `README.md` (`esp32/`, `pi/`, `cloud/`)와 `tests/README.md`
+4. 작업할 파트의 `README.md` (`esp32/`, `pi/`, `cloud/`, `web/`)와 `tests/README.md`
 
 ## 1. 담당 영역
 
-- 파트는 `esp32` `pi` `cloud` 3개이고, 최상위 폴더 이름이 곧 파트 이름이다. 담당자는 `README.md` 표에 있다.
-- 내 파트 폴더와 `tests/<내 파트>/`만 고친다. 다른 파트 폴더는 읽기만 한다.
-- 다른 파트를 고쳐야 문제가 풀리면 고치지 말고 멈춘 뒤, 무엇을 왜 바꿔야 하는지 담당자에게 알린다.
-- 공용 파일(`README.md`, `CLAUDE.md`, `docs/`, `.github/`, `pytest.ini`, `tests/conftest.py`, `.env.example`)은 관련 담당자와 상의한 뒤 바꾼다.
-- 인원이 늘면 파트 안 하위 폴더 단위로 나눠 맡는다. 폴더 구조와 파트 이름은 바꾸지 않는다.
+- 파트는 `esp32` `pi` `cloud` `web` 4개이고, 최상위 폴더 이름이 곧 파트 이름이다.
+- 고칠 수 있는 범위는 `README.md`의 "폴더별 담당" 표에서 내 이름이 적힌 폴더와 그에 맞는 `tests/` 폴더다. 나머지는 읽기만 한다.
+  - 예: `pi/uploader/`는 `pi/` 아래에 있지만 담당은 cloud(도은)다.
+- 다른 담당의 폴더를 고쳐야 문제가 풀리면 고치지 말고 멈춘 뒤, 무엇을 왜 바꿔야 하는지 담당자에게 알린다.
+- 공용 파일(`README.md`, `CLAUDE.md`, `docs/`, `pytest.ini`, `tests/conftest.py`, `.env.example`)은 관련 담당자와 상의한 뒤 바꾼다. `.github/`(CI)는 명수 담당이다.
+- 라즈베리 파이 실물은 명수가 가지고 있다. Pi에서만 할 수 있는 일(배포, 메모리·추론 시간 측정, ESP32 연결 테스트)은 명수에게 요청한다. 다른 사람은 PC의 Docker와 CI(arm64 러너)로 개발·검증한다.
+- 담당이 바뀌거나 사람이 늘면 "폴더별 담당" 표와 `.github/CODEOWNERS`만 고친다. 폴더 구조와 파트 이름은 바꾸지 않는다.
 
 ## 2. 개발 환경
 
@@ -34,7 +36,7 @@
 - `.env`, `esp32/firmware/safety_cam/config.h` (Wi-Fi 비밀번호, Supabase key, IP처럼 사람마다 다른 값)
 - 모델 가중치 `*.onnx` `*.pt`. ONNX는 GitHub Release `model-v1`에 올리고 `pi/models/README.md`에 SHA256을 적는다.
 - 영상 `*.mp4` `*.mov`, `pi/buffer/`
-- Supabase service key는 pi의 `.env`에만 둔다. 웹(`cloud/web/`)에는 anon key만 쓴다.
+- Supabase service key는 pi의 `.env`에만 둔다. 웹(`web/`)에는 anon key만 쓴다.
 
 예외: Edge Impulse Arduino 라이브러리 zip은 `esp32/model/`에 커밋한다 (CI 컴파일용).
 
@@ -68,7 +70,7 @@
 ## 8. 브랜치와 커밋
 
 - `main`(최종본)과 `dev`(통합)에는 직접 push하지 않는다. PR로만 합치고, 병합 방식은 Create a merge commit만 쓴다.
-- 작업 브랜치: `<태그>/<파트>/<기능>`. 태그는 `feature` `fix` `docs` `refactor` `chore`, 파트는 `esp32` `pi` `cloud` `common`.
+- 작업 브랜치: `<태그>/<파트>/<기능>`. 태그는 `feature` `fix` `docs` `refactor` `chore`, 파트는 고치는 폴더의 최상위 이름(`esp32` `pi` `cloud` `web`), 여러 파트에 걸치면 `common`.
 - 작업 브랜치는 `dev`에서 만들고 `dev`로 PR을 올린다. 병합 후 삭제한다.
 - 커밋 메시지: `<타입>(<파트>): <요약>`. 타입은 `feat` `fix` `docs` `refactor` `chore`. 예: `feat(pi): gateway 대기 줄 추가`
 - 실수로 로컬 `dev`에 커밋했다면 `git switch -c <작업 브랜치>` 뒤 `git branch -f dev origin/dev`로 옮긴다.
