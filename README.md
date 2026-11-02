@@ -8,6 +8,7 @@ ESP32-S3가 사람을 감지한 프레임만 라즈베리 파이 5로 보내고,
 ```
 
 전체 구조는 `docs/architecture.html`, 파트 사이 데이터 형식은 `docs/contracts/`.
+Pi gateway API 사용법(같은 네트워크·인터넷 전송, 결과 조회, 고장 탐구)은 `docs/api-manual.html`.
 
 ## 파트 · 담당
 
