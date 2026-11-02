@@ -1,0 +1,4 @@
+{
+  "_설명": "tests/fixtures/images/의 사진별 기대 판정. 사진을 더하면 여기에 한 줄 더한다. 적은 필드만 비교한다 (verdict, has_helmet, has_vest).",
+  "blank.jpg": {"verdict": "no_person"}
+}
