@@ -57,6 +57,7 @@ jobs:
             web:
               - 'web/**'
               - 'tests/web/**'
+              - 'cloud/supabase/schema.sql'   # tests/web이 웹이 읽는 컬럼을 schema.sql과 대조한다
             common:
               - 'docs/contracts/**'
               - 'tests/contracts/**'
@@ -94,10 +95,11 @@ jobs:
         with:
           path: pi/models/*.onnx
           key: model-${{ hashFiles('pi/models/README.md') }}
-      - name: 모델 받기 (Release model-v1이 있을 때만. 없으면 model 테스트는 건너뜀)
+      - name: 모델 받기 (model 테스트가 있고 Release model-v1이 있을 때만)
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          if ! grep -rqs "mark.model" tests/; then echo "model 테스트 없음. 받지 않음"; exit 0; fi
           if ls pi/models/*.onnx >/dev/null 2>&1; then echo "캐시에서 복원됨"; exit 0; fi
           gh release download model-v1 -p '*.onnx' -D pi/models \
             || echo "::notice::Release model-v1 없음. @pytest.mark.model 테스트는 건너뜀"
@@ -131,10 +133,7 @@ jobs:
         if: failure()
         working-directory: pi
         run: docker compose ps && docker compose logs --no-color --tail 200
-      - name: 정리
-        if: always()
-        working-directory: pi
-        run: docker compose -f docker-compose.yml -f docker-compose.ci.yml down
+      # compose down은 하지 않는다. 러너는 job이 끝나면 버려진다 (정리에 20초 이상 걸렸다)
 
   esp32:
     needs: changes
@@ -188,22 +187,38 @@ jobs:
       SUPABASE_DB_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
     steps:
       - uses: actions/checkout@v4
-      - uses: supabase/setup-cli@v1
+      # 로컬 Supabase 기동은 1분 30초 이상 걸린다. tests/cloud에 테스트가 생기면 그때부터 띄운다
+      - name: tests/cloud에 테스트가 있는지
+        id: t
+        run: |
+          if ls tests/cloud/test_*.py >/dev/null 2>&1; then
+            echo "has=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::tests/cloud에 테스트가 없어 Supabase를 띄우지 않음"
+          fi
+      - if: steps.t.outputs.has == 'true'
+        uses: supabase/setup-cli@v1
         with:
           version: latest
       - name: 로컬 Supabase 기동
+        if: steps.t.outputs.has == 'true'
         run: |
           mkdir -p /tmp/sb && cd /tmp/sb
           supabase init < /dev/null
           supabase start
       - name: schema.sql 적용
+        if: steps.t.outputs.has == 'true'
         run: psql "$SUPABASE_DB_URL" -v ON_ERROR_STOP=1 -f cloud/supabase/schema.sql
-      - uses: actions/setup-python@v5
+      - if: steps.t.outputs.has == 'true'
+        uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - run: pip install -r tests/requirements.txt
-      - name: pytest (테스트가 0개면 통과)
-        run: pytest tests/cloud -m "not pi" || [ $? -eq 5 ]
+      - if: steps.t.outputs.has == 'true'
+        run: pip install -r tests/requirements.txt
+      - name: pytest
+        if: steps.t.outputs.has == 'true'
+        run: pytest tests/cloud -m "not pi"
 
   web:
     needs: changes
