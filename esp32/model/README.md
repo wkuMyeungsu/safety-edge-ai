@@ -4,9 +4,9 @@
 |---|---|
 | Edge Impulse 프로젝트 | https://studio.edgeimpulse.com/public/121370/latest (사용 여부 미정) |
 | 배포 형식 | Arduino library |
-| 입력 크기 | 미정 |
-| 라이브러리 버전 | 미정 |
-
+| 모델 종류 | 물체 감지 FOMO, 라벨 `hum` 하나 (사람). 모델 자체 threshold 0.5 |
+| 입력 크기 | 64×64 RGB, resize mode fit longest (화면 전체를 줄이고 위아래를 검게 채움), int8, EON |
+| 라이브러리 | `Person_detection_FOMO_3_inferencing` 1.0.5 (`#include <Person_detection_FOMO_3_inferencing.h>`) |
 ## 받는 법
 
 1. Edge Impulse 프로젝트에서 Deployment → Arduino library로 내려받는다.
