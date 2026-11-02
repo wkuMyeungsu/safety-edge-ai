@@ -385,6 +385,7 @@ footer { color: var(--muted); font-size: 0.8rem; border-top: 1px solid var(--lin
 .rule h3 { font-size: 0.92rem; }
 .rule ul { margin: 0; padding-left: 1.1em; display: flex; flex-direction: column; gap: 4px; font-size: 0.86rem; }
 a { color: var(--hivis); }
+section.block > h3 { margin-top: 8px; }
 </style>
 
 <div class="page">
@@ -402,7 +403,7 @@ a { color: var(--hivis); }
   <div class="steps" role="list">
     <div class="step" role="listitem"><span class="no">01</span><b>브랜치 만들기</b><span>dev에서 새 브랜치를 만든다</span></div>
     <span class="arr" aria-hidden="true">→</span>
-    <div class="step opt" role="listitem"><span class="no">02 · 선택</span><b>Pi에서 시험</b><span>필요하면 실제 Pi에 올려 본다</span></div>
+    <div class="step opt" role="listitem"><span class="no">02 · 선택</span><b>Pi에서 시험</b><span>필요하면 실제 Pi에 올려 본다 (2·3절)</span></div>
     <span class="arr" aria-hidden="true">→</span>
     <div class="step" role="listitem"><span class="no">03</span><b>PR 올리기</b><span>dev로 PR을 올린다</span></div>
     <span class="arr" aria-hidden="true">→</span>
@@ -416,40 +417,56 @@ a { color: var(--hivis); }
   </ul>
 </section>
 
-<!-- ============ 2. Pi 연결 ============ -->
-<section class="block" aria-labelledby="h-routes">
+<!-- ============ 2. 실제 Pi로 테스트 ============ -->
+<section class="block" aria-labelledby="h-funnel">
   <div class="eyebrow">2</div>
-  <h2 id="h-routes">Pi에 연결하는 방법</h2>
-  <p>Pi는 한 대이고, Pi 관리자(명수)가 관리한다. 팀원은 아래 세 가지 방법으로 Pi를 쓴다.</p>
+  <h2 id="h-funnel">어디서든 실제 Pi로 테스트하기 (Tailscale Funnel)</h2>
+  <p>팀원 누구나 자기 자리에서 실제 Pi로 사진을 보내 테스트할 수 있게 하려고 Tailscale Funnel을 쓴다.</p>
+  <div class="steps" role="list">
+    <div class="step" role="listitem"><span class="no">문제</span><b>Pi는 한 대</b><span>현장 LAN 안에만 있다</span></div>
+    <span class="arr" aria-hidden="true">→</span>
+    <div class="step" role="listitem"><span class="no">문제</span><b>팀원은 외부 네트워크</b><span>각자 자리에서는 Pi에 닿지 않는다</span></div>
+    <span class="arr" aria-hidden="true">→</span>
+    <div class="step hi" role="listitem"><span class="no">해결</span><b>Tailscale Funnel</b><span>gateway만 인터넷 주소로 연다</span></div>
+    <span class="arr" aria-hidden="true">→</span>
+    <div class="step" role="listitem"><span class="no">결과</span><b>어디서든 테스트</b><span>실제 Pi로 사진을 보낸다</span></div>
+    <span class="arr" aria-hidden="true">→</span>
+    <div class="step" role="listitem"><span class="no">보완</span><b>팀 토큰</b><span>공개 주소라서 팀만 받는다</span></div>
+  </div>
+
+  <h3>연결 구조</h3>
   <div class="routes">
     <div class="route">
       <div class="box"><b>현장 ESP32</b><span>Pi와 같은 LAN</span></div>
-      <div class="via"><b>LAN</b><div class="line"></div><span>토큰 없이 보낸다</span></div>
-      <div class="box pi"><b>gateway</b><span>사진을 받는다</span></div>
+      <div class="via"><b>LAN</b><div class="line"></div><span>토큰 없음</span></div>
+      <div class="box pi"><b>Pi gateway</b><span>사진을 받는다</span></div>
     </div>
     <div class="route">
       <div class="box"><b>외부 ESP32, PC</b><span>다른 네트워크</span></div>
-      <div class="via hi"><b>Tailscale Funnel</b><div class="line"></div><span>토큰을 붙여 보낸다</span></div>
-      <div class="box pi"><b>gateway</b><span>사진을 받는다</span></div>
-    </div>
-    <div class="route">
-      <div class="box"><b>팀원 누구나</b><span>GitHub 웹사이트</span></div>
-      <div class="via hi"><b>deploy-pi</b><div class="line"></div><span>내 브랜치를 올린다</span></div>
-      <div class="box pi"><b>Pi</b><span>새 코드로 다시 빌드한다</span></div>
+      <div class="via hi"><b>Tailscale Funnel (HTTPS)</b><div class="line"></div><span>팀 토큰 필요</span></div>
+      <div class="box pi"><b>Pi gateway</b><span>같은 처리를 거친다</span></div>
     </div>
   </div>
-  <ul class="note-list">
-    <li>사진을 보낼 때는 위의 두 줄을 쓴다. 3절에서 설명한다.</li>
-    <li>코드를 바꿔서 시험할 때는 마지막 줄을 쓴다. 4절에서 설명한다.</li>
-    <li>인터넷에는 gateway 하나만 열려 있다. SSH 같은 다른 접속은 막혀 있다.</li>
-  </ul>
-</section>
+  <p>외부에서 보낸 사진도 현장 사진과 똑같이 판정되고, 위반이면 Supabase와 웹까지 간다. 그래서 실제 시스템 그대로 테스트할 수 있다.</p>
 
-<!-- ============ 3. 사진 보내기 ============ -->
-<section class="block" aria-labelledby="h-send">
-  <div class="eyebrow">3</div>
-  <h2 id="h-send">사진 보내기</h2>
-  <p>보내는 네트워크에 따라 주소가 다르다. 외부 네트워크에서 보낼 때는 토큰이 꼭 필요하다.</p>
+  <h3>Funnel을 고른 이유</h3>
+  <ul class="note-list">
+    <li>도메인이 없어도 고정 HTTPS 주소가 생긴다.</li>
+    <li>공유기 포트포워딩을 하지 않아도 된다.</li>
+    <li>gateway만 열리고, SSH 같은 다른 접속은 계속 막혀 있다.</li>
+    <li>다른 방법은 쓰지 않았다. 포트포워딩은 공유기 포트가 노출되고, Cloudflare Tunnel은 도메인이 필요하고, ngrok 무료판은 월 1GB 제한이 있다.</li>
+  </ul>
+
+  <h3>토큰이 필요한 이유</h3>
+  <ul class="note-list">
+    <li>Funnel 주소는 인터넷에 공개되어 있다. 주소만 알면 누구나 사진을 보낼 수 있다.</li>
+    <li>모르는 사람이 보낸 사진도 판정된다. 위반이면 Supabase와 웹에 가짜 기록이 남는다.</li>
+    <li>사진이 많이 들어오면 대기 줄이 차서 팀 ESP32의 사진이 <code>503</code>으로 거절된다.</li>
+    <li>그래서 외부에서 온 요청은 팀 토큰이 있을 때만 받는다. 토큰이 없거나 틀리면 <code>401</code>이다.</li>
+    <li>같은 LAN은 그 네트워크 안의 장치만 접근할 수 있어서 토큰을 검사하지 않는다.</li>
+  </ul>
+
+  <h3>사진 보내기</h3>
   <div class="table-wrap">
     <table>
       <thead><tr><th>보내는 곳</th><th>주소</th><th>토큰</th></tr></thead>
@@ -459,30 +476,30 @@ a { color: var(--hivis); }
       </tbody>
     </table>
   </div>
-  <h3>토큰이 필요한 이유</h3>
-  <ul class="note-list">
-    <li>Funnel 주소는 인터넷에 공개되어 있다. 주소만 알면 누구나 사진을 보낼 수 있다.</li>
-    <li>모르는 사람이 보낸 사진도 그대로 판정되고, 위반이면 Supabase와 웹에 가짜 기록이 남는다.</li>
-    <li>사진이 많이 들어오면 대기 줄이 차서 팀 ESP32의 사진이 <code>503</code>으로 거절된다.</li>
-    <li>그래서 외부에서 온 요청은 팀 토큰이 있을 때만 받는다.</li>
-    <li>같은 LAN은 Pi와 같은 네트워크에 있는 장치만 접근할 수 있어서 토큰을 검사하지 않는다.</li>
-  </ul>
-  <p>PC에서 사진 한 장을 보내 보는 예시다.</p>
 <pre>curl -H "X-Device-Id: test-&lt;이름&gt;" -H "X-Device-Token: &lt;토큰&gt;" -H "Content-Type: image/jpeg" \
      --data-binary @사진.jpg https://&lt;Pi 이름&gt;.&lt;tailnet&gt;.ts.net/frame</pre>
   <ul class="note-list">
     <li>성공하면 <code>202</code>와 함께 사진 번호 <code>frame</code>이 돌아온다.</li>
-    <li>토큰이 없거나 틀리면 <code>401</code>이 돌아온다.</li>
     <li>장치 ID는 ESP32면 <code>cam-&lt;이름&gt;</code>, 시험용이면 <code>test-&lt;아무거나&gt;</code>로 쓴다.</li>
     <li>토큰은 Pi 관리자에게 개인 메시지로 받는다. 저장소에는 올리지 않는다.</li>
     <li>실제 주소와 응답 형식은 <a href="api-manual.html">api-manual.html</a>에 있다.</li>
   </ul>
 </section>
 
-<!-- ============ 4. Pi에 올리기 ============ -->
+<!-- ============ 3. 코드를 Pi에 올리기 ============ -->
 <section class="block" aria-labelledby="h-deploy">
-  <div class="eyebrow">4</div>
-  <h2 id="h-deploy">내 코드를 Pi에 올리기</h2>
+  <div class="eyebrow">3</div>
+  <h2 id="h-deploy">내 코드를 Pi에 올리기 (deploy-pi)</h2>
+  <p>Funnel로는 사진만 보낼 수 있다. 내가 고친 코드를 Pi에서 돌려 보려면 deploy-pi를 쓴다.</p>
+  <div class="steps" role="list">
+    <div class="step" role="listitem"><span class="no">문제</span><b>코드는 못 바꾼다</b><span>Funnel은 사진만 받는다</span></div>
+    <span class="arr" aria-hidden="true">→</span>
+    <div class="step" role="listitem"><span class="no">문제</span><b>SSH는 열지 않는다</b><span>Pi 전체 권한을 주게 된다</span></div>
+    <span class="arr" aria-hidden="true">→</span>
+    <div class="step hi" role="listitem"><span class="no">해결</span><b>deploy-pi</b><span>Pi 안의 runner가 GitHub에서 작업을 받아 온다</span></div>
+    <span class="arr" aria-hidden="true">→</span>
+    <div class="step" role="listitem"><span class="no">결과</span><b>버튼으로 배포</b><span>누구나 내 브랜치를 Pi에 올린다</span></div>
+  </div>
   <p>GitHub에서 Actions → <code>deploy-pi</code> → Run workflow를 누른다. 올릴 브랜치를 고르고, 아래 셋 중 하나를 고른다.</p>
   <div class="table-wrap">
     <table>
@@ -495,15 +512,16 @@ a { color: var(--hivis); }
     </table>
   </div>
   <ul class="note-list">
+    <li>올린 뒤에는 2절의 방법으로 사진을 보내 테스트한다.</li>
     <li>다른 사람이 시험 중이면 바로 실패한다. 실행 화면 맨 위에 누가 쓰고 있는지 나온다.</li>
     <li>시험이 끝나면 <code>release</code>를 누르고, <code>dev</code>를 다시 올려 둔다.</li>
     <li>모델 파일과 <code>.env</code>는 이 버튼으로 바뀌지 않는다. 바꿀 일이 있으면 Pi 관리자에게 요청한다.</li>
   </ul>
 </section>
 
-<!-- ============ 5. 문제 찾기 ============ -->
+<!-- ============ 4. 문제 찾기 ============ -->
 <section class="block" aria-labelledby="h-trace">
-  <div class="eyebrow">5</div>
+  <div class="eyebrow">4</div>
   <h2 id="h-trace">사진이 어디서 멈췄는지 찾기</h2>
   <p>사진마다 번호가 붙는다. 이 번호로 사진 한 장이 어디까지 갔는지 따라간다.</p>
   <div class="steps" role="list">
@@ -521,9 +539,9 @@ a { color: var(--hivis); }
   </ul>
 </section>
 
-<!-- ============ 6. 규칙 ============ -->
+<!-- ============ 5. 규칙 ============ -->
 <section class="block" aria-labelledby="h-rules">
-  <div class="eyebrow">6</div>
+  <div class="eyebrow">5</div>
   <h2 id="h-rules">규칙</h2>
   <div class="rules">
     <div class="rule">
