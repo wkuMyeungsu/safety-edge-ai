@@ -429,6 +429,25 @@ section.block > h3 { margin-top: 8px; }
     <li>외부에서 보낸 사진도 현장 사진과 동일하게 판정·저장되므로, 실제 시스템과 같은 조건으로 검증 가능.</li>
   </ul>
 
+  <h3>담당별 활용 예시</h3>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>담당</th><th>테스트 구간</th><th>방법</th><th>확인 항목</th></tr></thead>
+      <tbody>
+        <tr><td>esp32 (대희)</td><td>ESP32 → gateway</td><td>본인 ESP32에서 Funnel 주소로 전송</td><td>시리얼의 <code>202</code>·<code>frame</code>, <code>/recent</code>의 감지 점수·사람 수</td></tr>
+        <tr><td>inference (우진)</td><td>gateway → inference</td><td><code>deploy-pi</code>로 추론 코드 배포 후 시험 사진 전송</td><td><code>/recent</code>의 판정 결과, Pi 실측 <code>infer_ms</code></td></tr>
+        <tr><td>uploader·cloud (도은)</td><td>gateway → uploader → Supabase</td><td>위반 사진(<code>fail</code>) 전송</td><td><code>safety_logs</code> 행, <code>violations</code> 버킷 사진, uploader 로그의 <code>log_id</code></td></tr>
+        <tr><td>web (진아)</td><td>Supabase → 웹</td><td><code>test-</code> 장치 ID로 위반 사진 전송</td><td>웹 목록·수치의 실시간 갱신, 사진 표시, 장치 필터</td></tr>
+        <tr><td>gateway·배포 (명수)</td><td>전체 흐름</td><td>Funnel 경유 요청, 연속 요청</td><td>토큰 불일치 시 <code>401</code>, 대기 줄 초과 시 <code>503</code>, 배포 후 <code>commit=</code></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <ul class="note-list">
+    <li>모든 담당이 PC에서 curl로 사진을 보내 실제 Pi의 전체 흐름(판정 → 저장 → 웹 표시)을 확인할 수 있음.</li>
+    <li>코드 변경을 실제 Pi에서 확인하려면 3절의 <code>deploy-pi</code>로 먼저 배포.</li>
+    <li>시험 기록은 장치 ID를 <code>test-</code>로 시작하여 운영 기록과 구분.</li>
+  </ul>
+
   <h3>구성</h3>
   <div class="routes">
     <div class="route">
