@@ -1,0 +1,176 @@
+{
+  "measured_at_utc": "2026-11-02T06:39:23.995Z",
+  "execution_target": "실제 팀 Raspberry Pi의 gateway → inference → uploader 경로",
+  "runner_name": "rpi5",
+  "code_commit": "5bac24068f0cb2aa53015bcad6f8375627e302e7",
+  "endpoint": "https://rpi5.tail7377e4.ts.net",
+  "device_id": "test-woojin-20261102-063509",
+  "model": {
+    "file": "ppe_yolov8.onnx",
+    "input_observed_in_startup_log": [
+      1,
+      3,
+      640,
+      640
+    ],
+    "sha256_observed": null,
+    "identity_note": "배포 로그에서 파일명·입력 640 및 PPE 클래스 매핑만 확인. 현재 gateway/status는 ONNX 해시를 제공하지 않아 파일 동일성을 검증하지 못함. 576 최적화 모델 시험이 아님."
+  },
+  "memory": {
+    "measured": false,
+    "reason": "현재 공개 API와 deploy-pi status는 메모리 측정값을 제공하지 않음."
+  },
+  "method": {
+    "requests_per_image": 1,
+    "warmup": 0,
+    "ordered_sequential": true,
+    "note": "연결·판정 회귀 smoke test. infer_ms는 Pi inference가 반환한 값이며 client ACK/조회 시간에는 인터넷·Funnel·polling 시간이 포함됨. 정식 반복 성능 벤치마크가 아님."
+  },
+  "cases": [
+    {
+      "image": "blank.jpg",
+      "expected": {
+        "verdict": "no_person",
+        "persons": 0
+      },
+      "ack_http_ms": 6408,
+      "observed_after_ms": 10187,
+      "response": {
+        "frame": "7c31b43b",
+        "device_id": "test-woojin-20261102-063509",
+        "received_at": "2026-11-02T06:35:42.805925+00:00",
+        "wait_ms": 0,
+        "person_score": null,
+        "person_count": null,
+        "verdict": "no_person",
+        "upload": null,
+        "has_helmet": true,
+        "has_vest": true,
+        "confidence": 0,
+        "persons": 0,
+        "infer_ms": 459,
+        "total_ms": 511
+      },
+      "matches": true
+    },
+    {
+      "image": "test_11.jpg",
+      "expected": {
+        "verdict": "pass",
+        "has_helmet": true,
+        "has_vest": true
+      },
+      "ack_http_ms": 2452,
+      "observed_after_ms": 3298,
+      "response": {
+        "frame": "0c99d3f9",
+        "device_id": "test-woojin-20261102-063509",
+        "received_at": "2026-11-02T06:35:48.892287+00:00",
+        "wait_ms": 0,
+        "person_score": null,
+        "person_count": null,
+        "verdict": "pass",
+        "upload": null,
+        "has_helmet": true,
+        "has_vest": true,
+        "confidence": 0.705,
+        "persons": 1,
+        "infer_ms": 447,
+        "total_ms": 455
+      },
+      "matches": true
+    },
+    {
+      "image": "test_0.jpg",
+      "expected": {
+        "verdict": "fail",
+        "has_helmet": false,
+        "has_vest": false
+      },
+      "ack_http_ms": 10247,
+      "observed_after_ms": 17573,
+      "response": {
+        "frame": "c77fec7d",
+        "device_id": "test-woojin-20261102-063509",
+        "received_at": "2026-11-02T06:36:24.986436+00:00",
+        "wait_ms": 0,
+        "person_score": null,
+        "person_count": null,
+        "verdict": "fail",
+        "upload": "stored",
+        "has_helmet": false,
+        "has_vest": false,
+        "confidence": 0.966,
+        "persons": 1,
+        "infer_ms": 463,
+        "upload_ms": 2631,
+        "total_ms": 3117
+      },
+      "matches": true
+    },
+    {
+      "image": "test_26.jpg",
+      "expected": {
+        "verdict": "fail",
+        "has_helmet": true,
+        "has_vest": false
+      },
+      "ack_http_ms": 5969,
+      "observed_after_ms": 11904,
+      "response": {
+        "frame": "ba8f6d9e",
+        "device_id": "test-woojin-20261102-063509",
+        "received_at": "2026-11-02T06:36:38.324497+00:00",
+        "wait_ms": 0,
+        "person_score": null,
+        "person_count": null,
+        "verdict": "fail",
+        "upload": "stored",
+        "has_helmet": true,
+        "has_vest": false,
+        "confidence": 0.651,
+        "persons": 1,
+        "infer_ms": 444,
+        "upload_ms": 1854,
+        "total_ms": 2304
+      },
+      "matches": true
+    }
+  ],
+  "all_expected_match": true,
+  "inference_ms_range": {
+    "min": 444,
+    "max": 463
+  },
+  "gateway_health_after": {
+    "service": "gateway",
+    "status": "ok",
+    "queue": 0,
+    "queue_max": 4,
+    "stats": {
+      "received": 4,
+      "verdict_no_person": 1,
+      "verdict_pass": 1,
+      "upload_stored": 2,
+      "verdict_fail": 2
+    }
+  },
+  "stored_test_records": [
+    {
+      "frame": "c77fec7d",
+      "log_id": "8"
+    },
+    {
+      "frame": "ba8f6d9e",
+      "log_id": "9"
+    }
+  ],
+  "stored_records_deleted": false,
+  "cleanup_note": "Supabase 시험 기록 2건(log_id 8,9)은 위 device_id로 식별 가능. 공개 gateway API에 삭제 기능이 없어 삭제하지 않음. 버퍼 저장 응답은 없었음.",
+  "workflow": {
+    "status": "https://github.com/wkuMyeungsu/safety-edge-ai/actions/runs/41400471190",
+    "deploy": "https://github.com/wkuMyeungsu/safety-edge-ai/actions/runs/41400753480",
+    "release": "https://github.com/wkuMyeungsu/safety-edge-ai/actions/runs/41401068822",
+    "release_verified": true
+  }
+}
