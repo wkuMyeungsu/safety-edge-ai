@@ -21,7 +21,69 @@ curl -fL https://github.com/wkuMyeungsu/safety-edge-ai/releases/download/model-v
 python pi/models/verify_onnx.py pi/models/ppe_yolov8.onnx --sha256 0471240ce41e89bc0e58daf0b12d33102d6a70db5bad611f90533f6d3402cb17
 ```
 
-## 기존 후보 재현
+## 선택적 속도 최적화 후보: 576 입력
+
+[model-v1-576](https://github.com/wkuMyeungsu/safety-edge-ai/releases/tag/model-v1-576)은 기존 SafeSight 원본 가중치를 **576×576 FP32, opset 17**로 다시 내보낸 후보이다. 640 배포본과 `model-v1`은 보존한다. 서버는 모델의 정적 입력 크기를 읽으므로 추론 코드·판정 임계값·기대 정답 변경 없이 사용할 수 있다. 모델 파일만 자동으로 교체하지는 않는다.
+
+- 메타데이터: [model-v1-576.json](model-v1-576.json)
+- SHA256: `85533d8ef50e65435e5b7d9dfb7d87f5f0aa604469ffe222a471ae17648bd2f2`
+- 입력 `[1, 3, 576, 576]`, 출력 `[1, 23, 6804]`, 44,715,015 bytes. 입력 픽셀 수는 19% 줄지만 가중치 파일 크기는 거의 같다.
+- 원본 PyTorch 대비 영 입력·고정 난수 입력 수치 비교 통과(`rtol=atol=0.001`). 576 모델의 실제 HTTP 테스트는 20개 통과, 1개 건너뜀(모델 없음 503 검사)이다.
+
+```bash
+mkdir -p pi/models/optimized-576
+curl -fL https://github.com/wkuMyeungsu/safety-edge-ai/releases/download/model-v1-576/ppe_yolov8.onnx \
+  -o pi/models/optimized-576/ppe_yolov8.onnx
+python pi/models/verify_onnx.py pi/models/optimized-576/ppe_yolov8.onnx \
+  --sha256 85533d8ef50e65435e5b7d9dfb7d87f5f0aa604469ffe222a471ae17648bd2f2
+```
+
+재변환 명령은 `export_onnx.py --source safesight --weights <검증한 원본.pt> --imgsz 576 --output <새 파일.onnx>`이다. Windows PC에서 같은 3개 스레드·spinning 활성 상태로 크기를 순차 비교한 [원본 결과](reports/input-size-comparison-2026-11-02-pc.json)는 다음과 같다. 코드 커밋은 `b0db731824cd6caed747ed42e39194a4c876fa4b`, 사진 4종 각각 예열 1회와 측정 3회다.
+
+| 입력 | 기존 사진 기대 판정 | 추론 중앙값 (Windows PC) |
+|---|---|---|
+| 640 | 모두 일치 | 201 ms |
+| 608 | 모두 일치 | 194 ms |
+| 576 | 모두 일치 — 선택 | 180.5 ms |
+| 544 | 착용 사진의 조끼 누락 — 제외 | 153 ms |
+| 512·448·384·320 | 같은 착용 사진 판정 실패 — 제외 | 별도 초기 비교 원본에 기록 |
+
+576은 검사한 크기 중 가장 작은 통과 후보이며 이 PC 비교에서 중앙값이 약 10.2% 줄었다. 사진의 `pass`/`fail`/`no_person` 및 안전모·조끼 판정은 유지되지만 검출 점수·좌표·부가 클래스는 달라질 수 있다. 사진 4종의 회귀 검사는 전체 현장 정확도의 동등성을 보장하지 않으며, 실제 Pi 속도·정확도 검증은 별도다. 기존 CI는 계속 `model-v1` 640 모델을 사용한다.
+
+576 컨테이너 측정에는 아래 도구의 `--model pi/models/optimized-576/ppe_yolov8.onnx --manifest pi/models/model-v1-576.json`을 지정한다. 런타임 기본값 `ORT_THREADS=3`, `ORT_SPINNING=1`은 유지한다.
+
+### ARM64 QEMU에서 640과 576 비교
+
+공개 Release에서 다운로드한 파일의 SHA256을 확인하고 실행했다. [576 원본 결과](reports/arm64-qemu-576-2026-11-02.json)의 코드 커밋은 `ff295b6fc44e0f85f8b1dffc809e5d30f594ad6b`이다. [기존 640 측정](reports/arm64-qemu-2026-11-02.json)과 같은 호스트·QEMU·Python·패키지 버전, CPU quota 3, ORT 스레드 3, spinning 활성, 메모리 1 GiB, swap 0 조건이다. 각 실행은 사진별 예열 1회 + 측정 5회(20회), 동시 요청 2건을 수행했다.
+
+| 항목 | 기존 640 | 최적화 후보 576 |
+|---|---:|---:|
+| 서버 추론 중앙값 | 26,335 ms | 20,997.5 ms |
+| 서버 추론 P95 | 26,955 ms | 21,302 ms |
+| 서버 추론 최대 | 27,052 ms | 21,359 ms |
+| HTTP 왕복 중앙값 | 26,399.622 ms | 21,039.283 ms |
+| cgroup 최대 메모리 | 304,185,344 bytes (290.094 MiB) | 374,820,864 bytes (357.457 MiB) |
+| OOM / OOM kill | 0 / 0 | 0 / 0 |
+| 동시 요청 중 상태 응답 | 2개 대기, 6.838 ms | 2개 대기, 7.501 ms |
+| 측정·예열·동시 요청 기대 판정 | 모두 일치 | 모두 일치 |
+
+중앙값은 약 **20.3% 감소**했다. 사진별 예열 응답의 `verdict`, `has_helmet`, `has_vest`, `persons`도 기존 640 결과와 직접 대조해 모두 일치했다. 점수와 좌표는 해상도에 따라 달라지므로 동일하다고 주장하지 않는다.
+
+속도 개선과 함께 **이번 cgroup 최대 메모리는 67.363 MiB 증가**했다. 두 값 모두 컨테이너 전체 생명주기의 메모리이며 QEMU·모델 로드·해시 확인·계측 비용을 포함한다. 순수 ONNX 메모리나 실물 Pi의 메모리로 해석하지 않는다. 두 모델 모두 1 GiB 제한 내에서 완료됐다. 이 수치는 QEMU 가상 실행 결과이며 Pi 5 속도로 환산할 수 없다.
+
+576 재현 명령(현재 커밋 라벨로 ARM64 이미지를 빌드한 뒤):
+
+```bash
+python3 pi/models/run_container_benchmark.py \
+  --image safety-edge-ai/inference:arm64-benchmark \
+  --model pi/models/optimized-576/ppe_yolov8.onnx \
+  --manifest pi/models/model-v1-576.json \
+  --server-label "실제 호스트 CPU / OS / QEMU 버전" \
+  --ort-threads 3 --ort-spinning 1 --repeats 5 --parallel 2 \
+  --output arm64-576-result.json
+```
+
+## 이전 Hansung 후보 재현
 
 기존 문서의 [Hansung-Cho/yolov8-ppe-detection](https://huggingface.co/Hansung-Cho/yolov8-ppe-detection)을 같은 가중치로 검증한다. 현장 모델 채택과 Pi 성능 측정은 별도다.
 
@@ -48,6 +110,7 @@ pi/models/.venv/bin/python pi/models/export_onnx.py --source safesight --downloa
 Windows PowerShell에서는 `python3.12` 대신 `py -3.12`, `pi/models/.venv/bin/python` 대신 `.\pi\models\.venv\Scripts\python.exe`를 쓴다.
 
 - `--source safesight`가 검증용 배포 후보다. 기존 후보는 `--source hansung`으로 재현한다. 생략 시 기존 동작대로 hansung을 사용한다.
+- `--imgsz`는 320~640 사이의 32 배수이며 기본값은 640이다. 작은 입력도 별도 파일로 내보내며 PyTorch/ONNX 수치 비교는 지정한 크기로 수행한다. 사진별 기대 판정 검사를 통과하기 전에는 배포 후보로 선택하지 않는다.
 - 이미 받은 동일 원본은 `--weights <best.pt 경로>`로 지정한다. 선택한 `--source`의 해시와 맞아야 하며 `--download`와 함께 쓰지 않는다.
 - 원본 해시를 확인한 뒤 가중치를 불러온다. 정적 크기, 배치 1, FP32, NMS 제외, simplify 제외로 변환한다.
 - ONNX checker, 서버와 같은 클래스·입출력 검사, CPU 실행, NaN·점수 범위 검사, PyTorch 대비 출력 비교(영 입력·고정 난수 입력, `rtol=atol=0.001`)가 모두 통과해야 출력 파일을 만든다.
@@ -97,6 +160,8 @@ python pi/models/run_http_smoke.py --url http://127.0.0.1:8003 \
 
 ## 실물 없이 ARM64 컨테이너에서 측정
 
+PC의 런타임 설정은 `compare_runtime.py --server-label "실제 PC CPU와 OS" --output runtime-comparison.json`으로 비교할 수 있다. 추론 의존성이 설치된 Python으로 실행하며, 스레드 1·2·3개와 spinning 0·1의 서버 6개를 한 번에 하나씩 실행한다. 모든 측정의 기대 판정과 각 사진 예열 응답의 점수·좌표·인원 수까지 대조한다. [초기 PC 비교](reports/runtime-comparison-2026-11-02-pc.json)에서 판정은 동일했으며, 대기 방식 변경의 일관된 이득을 확인하지 못해 기본 `ORT_THREADS=3`, `ORT_SPINNING=1`을 유지했다. 이 기록은 일부 캐시 빌드가 겹친 초기 스크리닝으로 정밀한 설정별 순위를 뜻하지 않는다.
+
 `run_container_benchmark.py`는 실제 ONNX 서버를 Linux ARM64 컨테이너에서 실행한다. x86 PC에서는 QEMU/binfmt가 준비된 Docker가 필요하다. Windows에서는 WSL 내부에서 Linux Docker Engine과 이 도구를 함께 실행할 수도 있다. 컨테이너는 Pi Compose와 같은 메모리 1 GiB, ORT 스레드 3개를 사용하며 CPU quota 3개, swap 0으로 제한한다. 이 CPU quota는 Pi 5의 코어 성능이나 클럭을 재현하지 않는다.
 
 추론 코드와 측정 도구를 커밋한 뒤 저장소 루트에서 실행한다. Python은 표준 라이브러리만 필요하다. Docker CLI가 로컬 Linux 엔진에 연결되어 있어야 하며 cgroup v2를 사용한다.
@@ -112,6 +177,7 @@ python3 pi/models/run_container_benchmark.py \
 ```
 
 - 이미지의 아키텍처·커밋 라벨과 컨테이너 내부 Python 코드·requirements·ONNX의 SHA256을 확인한다. 기존 HTTP 판정 검사를 재사용하며, 기본 20회 측정과 사진별 예열 4회, 동시 요청 2회를 실행한다.
+- 스레드 비교에는 `--ort-threads 1|2|3`, 대기 방식 비교에는 `--ort-spinning 0|1`을 사용한다. spinning을 생략하면 서버 기본값을 따른다. CPU quota는 모든 비교에서 3으로 유지하며 실제 지정값을 보고서에 기록한다.
 - 포트는 `127.0.0.1`에 임의 배정한다. 다른 서비스는 실행하지 않으며, 도구가 만든 컨테이너만 종료·제거한다. 이미지와 출력 보고서는 보관한다.
 - `memory.current`와 `memory.peak`는 cgroup 전체 사용량이다. peak는 모델 로드와 계측 보조 프로세스까지 포함하며, QEMU 환경에서는 에뮬레이터 비용도 포함한다. 모델 파일 크기나 순수 ONNX 메모리와는 다르다. OOM 발생과 메모리·swap 제한도 검사한다.
 - QEMU 결과는 ARM64 실행 호환성과 제한된 메모리에서의 동작을 확인하는 값이다. **실제 Pi 5의 추론 속도·메모리로 보고하거나 환산하지 않는다.** 실물 측정과 ESP32 연결 검증은 여전히 별도다.

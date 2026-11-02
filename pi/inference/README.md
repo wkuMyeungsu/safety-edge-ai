@@ -11,7 +11,7 @@
 
 ## 판정
 
-1. 사진을 비율을 지켜 640×640에 맞추고(남는 곳은 회색) YOLOv8 PPE ONNX를 돌린다.
+1. 사진을 비율을 지켜 모델의 정적 입력 크기(기존 640×640, 최적화 후보 576×576)에 맞추고 남는 곳은 회색으로 채운 뒤 YOLOv8 PPE ONNX를 돌린다.
 2. 점수가 `CONF_THRES` 이상인 검출만 남기고, 클래스별 NMS(`IOU_THRES`)로 겹친 상자를 합친다.
 3. 클래스 이름으로 종류를 나눈다 (`detector.py`의 `CATEGORY_NAMES`). 대소문자·기호는 무시한다.
 
@@ -29,7 +29,9 @@
 
 ## 설정
 
-`MODEL_PATH`(기본 `/models/ppe_yolov8.onnx`), `CONF_THRES`(0.4), `IOU_THRES`(0.45), `ORT_THREADS`(3). 모델은 시작 때 한 번만 불러오고, 판정은 한 번에 한 장씩 한다 (Pi 5 4GB, uvicorn worker 1개).
+`MODEL_PATH`(기본 `/models/ppe_yolov8.onnx`), `CONF_THRES`(0.4), `IOU_THRES`(0.45), `ORT_THREADS`(3), `ORT_SPINNING`(1). 모델은 시작 때 한 번만 불러오고, 판정은 한 번에 한 장씩 한다 (Pi 5 4GB, uvicorn worker 1개).
+
+`ORT_SPINNING=0`이면 ONNX Runtime 작업 스레드가 대기할 때 CPU를 계속 점유하는 spinning을 끈다. `1`이면 켠다. 가중치·입력 크기·판정 임계값은 바뀌지 않는다. CPU quota와 아키텍처에 따라 효과가 다르므로 같은 사진으로 비교한다. [ONNX Runtime 스레드 설정](https://onnxruntime.ai/docs/performance/tune-performance/threading.html).
 
 요청은 비동기로 순서를 기다린 뒤 JPEG 디코딩·전처리·추론·판정을 한 장씩 처리한다. 기다리는 동안 작업 스레드를 점유하지 않으며 `/health`는 추론과 별도로 응답한다. JPEG가 아닌 이미지와 2MB를 넘는 본문은 거부하고, 긴 비율의 JPEG도 축소 후 변 길이가 최소 1픽셀이 되도록 처리한다.
 
