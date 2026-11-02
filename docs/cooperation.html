@@ -420,15 +420,15 @@ a { color: var(--hivis); }
 <section class="block" aria-labelledby="h-routes">
   <div class="eyebrow">2</div>
   <h2 id="h-routes">Pi에 연결하는 방법</h2>
-  <p>Pi는 명수 집에 한 대만 있다. 그래서 다른 팀원은 아래 세 가지 방법으로 Pi를 쓴다.</p>
+  <p>Pi는 한 대이고, Pi 관리자(명수)가 관리한다. 팀원은 아래 세 가지 방법으로 Pi를 쓴다.</p>
   <div class="routes">
     <div class="route">
-      <div class="box"><b>명수 집 ESP32</b><span>Pi와 같은 Wi-Fi</span></div>
-      <div class="via"><b>같은 Wi-Fi</b><div class="line"></div><span>토큰 없이 보낸다</span></div>
+      <div class="box"><b>현장 ESP32</b><span>Pi와 같은 LAN</span></div>
+      <div class="via"><b>LAN</b><div class="line"></div><span>토큰 없이 보낸다</span></div>
       <div class="box pi"><b>gateway</b><span>사진을 받는다</span></div>
     </div>
     <div class="route">
-      <div class="box"><b>다른 곳의 ESP32, PC</b><span>각자 집이나 학교</span></div>
+      <div class="box"><b>외부 ESP32, PC</b><span>다른 네트워크</span></div>
       <div class="via hi"><b>Tailscale Funnel</b><div class="line"></div><span>토큰을 붙여 보낸다</span></div>
       <div class="box pi"><b>gateway</b><span>사진을 받는다</span></div>
     </div>
@@ -449,13 +449,13 @@ a { color: var(--hivis); }
 <section class="block" aria-labelledby="h-send">
   <div class="eyebrow">3</div>
   <h2 id="h-send">사진 보내기</h2>
-  <p>어디서 보내는지에 따라 주소가 다르다. 인터넷으로 보낼 때는 토큰이 꼭 필요하다.</p>
+  <p>보내는 네트워크에 따라 주소가 다르다. 외부 네트워크에서 보낼 때는 토큰이 꼭 필요하다.</p>
   <div class="table-wrap">
     <table>
       <thead><tr><th>보내는 곳</th><th>주소</th><th>토큰</th></tr></thead>
       <tbody>
-        <tr><td>명수 집 Wi-Fi</td><td><code>http://&lt;Pi IP&gt;:8001/frame</code></td><td>필요 없음</td></tr>
-        <tr><td>그 밖의 곳</td><td><code>https://&lt;Pi 이름&gt;.&lt;tailnet&gt;.ts.net/frame</code></td><td><code>X-Device-Token</code> 헤더에 넣는다</td></tr>
+        <tr><td>Pi와 같은 LAN</td><td><code>http://&lt;Pi IP&gt;:8001/frame</code></td><td>필요 없음</td></tr>
+        <tr><td>외부 네트워크</td><td><code>https://&lt;Pi 이름&gt;.&lt;tailnet&gt;.ts.net/frame</code></td><td><code>X-Device-Token</code> 헤더에 넣는다</td></tr>
       </tbody>
     </table>
   </div>
@@ -466,7 +466,7 @@ a { color: var(--hivis); }
     <li>성공하면 <code>202</code>와 함께 사진 번호 <code>frame</code>이 돌아온다.</li>
     <li>토큰이 없거나 틀리면 <code>401</code>이 돌아온다.</li>
     <li>장치 ID는 ESP32면 <code>cam-&lt;이름&gt;</code>, 시험용이면 <code>test-&lt;아무거나&gt;</code>로 쓴다.</li>
-    <li>토큰은 명수에게 개인 메시지로 받는다. 저장소에는 올리지 않는다.</li>
+    <li>토큰은 Pi 관리자에게 개인 메시지로 받는다. 저장소에는 올리지 않는다.</li>
     <li>실제 주소와 응답 형식은 <a href="api-manual.html">api-manual.html</a>에 있다.</li>
   </ul>
 </section>
@@ -489,7 +489,7 @@ a { color: var(--hivis); }
   <ul class="note-list">
     <li>다른 사람이 시험 중이면 바로 실패한다. 실행 화면 맨 위에 누가 쓰고 있는지 나온다.</li>
     <li>시험이 끝나면 <code>release</code>를 누르고, <code>dev</code>를 다시 올려 둔다.</li>
-    <li>모델 파일과 <code>.env</code>는 이 버튼으로 바뀌지 않는다. 바꿀 일이 있으면 명수에게 말한다.</li>
+    <li>모델 파일과 <code>.env</code>는 이 버튼으로 바뀌지 않는다. 바꿀 일이 있으면 Pi 관리자에게 요청한다.</li>
   </ul>
 </section>
 
