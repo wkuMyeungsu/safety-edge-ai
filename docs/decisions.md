@@ -31,3 +31,11 @@
 - 결정: Pi의 gateway(`/frame`)만 Tailscale Funnel의 HTTPS 주소로 인터넷에 연다. 프록시를 거친 요청은 `X-Device-Token`(팀 공용 토큰)을 검사하고, 같은 네트워크 요청은 지금처럼 토큰 없이 받는다.
 - 이유: Pi는 한 대(명수 집)뿐이라 다른 팀원의 ESP32가 실제 Pi 파이프라인에 사진을 보낼 길이 필요했다. Funnel은 도메인 없이 고정 HTTPS 주소를 주고, 공유기 포트포워딩이 필요 없으며, SSH 같은 다른 포트는 닫힌 채로 둔다.
 - 버린 선택지: 공유기 포트포워딩 (SSH·포트가 인터넷에 노출된다), Cloudflare Tunnel (Cloudflare에 등록할 도메인이 필요하다. 도메인이 생기면 주소만 바꿔 옮길 수 있다), ngrok 무료 (월 1GB 전송 제한), 팀원 모두에게 SSH (Pi 전체 권한을 주게 된다).
+
+## 2026-11-02 Pi 배포는 Pi의 self-hosted runner로, 팀원 누구나 Actions에서 누른다
+
+- 결정: Pi에 GitHub Actions self-hosted runner(라벨 `pi`)를 서비스로 설치하고, `.github/workflows/deploy-pi.yml`(workflow_dispatch만)로 브랜치를 골라 `git checkout` → `docker compose up --build`를 한다. write 권한이 있는 팀원은 누구나 실행할 수 있다.
+- 이유: Pi가 명수 집에 한 대뿐이라 배포·재빌드가 명수에게 몰렸다. runner는 Pi에서 GitHub로 나가는 연결만 써서 새 포트를 열지 않고, 누가 언제 어느 커밋을 올렸는지 Actions 기록에 남는다. 배포 결과(커밋, 컨테이너 상태, 최근 로그)도 같은 화면에서 본다.
+- 버린 선택지: 팀원에게 SSH (Pi 전체 권한, Funnel 결정 때 이미 뺐다), gateway에 배포용 엔드포인트 (인터넷에 열린 서비스가 Docker를 다루게 된다), dev 병합 때 자동 배포 (팀원이 Pi에서 시험 중인 브랜치를 덮어쓴다. 필요하면 나중에 push 트리거만 더한다), Watchtower 같은 이미지 자동 갱신 (이미지 레지스트리가 필요하다).
+- 겹침 막기: 먼저 누른 deploy·release가 돌고 있으면 뒤의 실행은 기다리지 않고 바로 실패한다 (GitHub concurrency만 쓰면 기다리던 실행이 이유 없이 취소된다). deploy가 끝나면 Pi에 "시험 중" 표시(누가, 브랜치, 풀리는 시각)를 남겨 `hold_minutes` 동안 다른 사람의 deploy를 막는다. 막힌 이유는 실행 Summary에 남는다. 규칙은 `pi/deploy.sh` 하나에 두고, 명수가 Pi에서 직접 작업할 때도 같은 스크립트(`pi-deploy hold`·`release`)와 `~/.bashrc`의 docker 함수로 같은 표시를 따른다 (다른 사람이 시험 중이면 직접 `docker compose up` 등도 막힌다).
+- 주의: public 저장소라 이 workflow에 pull_request·push 트리거를 넣지 않는다. 저장소 설정에서 외부 기여자 PR의 workflow 실행은 승인을 받게 둔다.
