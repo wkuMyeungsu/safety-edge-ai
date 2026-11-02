@@ -24,10 +24,13 @@ create policy "anon read safety_logs"
   to anon
   using (true);
 
--- 위반 사진 버킷 (공개 읽기)
-insert into storage.buckets (id, name, public)
-values ('violations', 'violations', true)
-on conflict (id) do nothing;
+-- 위반 사진 버킷 (공개 읽기, JPEG만, 한 장 5MB 이하)
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values ('violations', 'violations', true, 5242880, array['image/jpeg'])
+on conflict (id) do update
+  set public = excluded.public,
+      file_size_limit = excluded.file_size_limit,
+      allowed_mime_types = excluded.allowed_mime_types;
 
 -- 웹 실시간 갱신
 do $$
