@@ -4,6 +4,8 @@ x-health: &health
   interval: 15s
   timeout: 3s
   retries: 3
+  start_period: 30s     # 기동 직후 30초 동안은
+  start_interval: 1s    # 1초마다 검사해서 healthy를 빨리 알린다 (Docker Engine 25 이상)
 
 services:
   gateway:
