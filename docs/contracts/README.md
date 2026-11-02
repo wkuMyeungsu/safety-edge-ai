@@ -7,8 +7,8 @@
 | 프레임 전송 | esp32 → pi gateway | 엔드포인트, 이미지 형식·해상도, device_id 전달 방법, 응답 코드 | 미정 |
 | 추론 | pi gateway ⇄ pi inference | 요청 형식, 판정 결과 JSON 필드 | 미정 |
 | 기록 저장 | pi gateway → pi uploader | 판정 결과 + 사진 전달 형식 | `record-storage.md` 초안 |
-| 저장 구조 | pi uploader → cloud | safety_logs 컬럼, 버킷 이름·경로 규칙 | `cloud/supabase/schema.sql` 초안 |
-| 조회 | cloud → web | 화면에 쓰는 컬럼, 사진 URL 형식, 실시간 구독 대상 | `cloud/supabase/schema.sql` 초안 |
+| 저장 구조 | pi uploader → cloud | safety_logs 컬럼, 버킷 이름·경로 규칙 | `storage.md` 초안 |
+| 조회 | cloud → web | 화면에 쓰는 컬럼, 사진 URL 형식, 실시간 구독 대상 | `storage.md` 초안 |
 
 | 경계 | 확인할 담당 |
 |---|---|
