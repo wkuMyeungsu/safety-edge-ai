@@ -25,10 +25,13 @@
 5. 사람이 없으면 `no_person`, 둘 다 true면 `pass`, 아니면 `fail`.
 
 안전모나 조끼 클래스가 없는 모델은 불러오지 않는다 (`/health`의 `error`에 이유, `/predict`는 503).
+입력은 float32 `[1, 3, S, S]`, 출력은 NMS 전 float32 `[1, 4+클래스 수, N]`인 고정 크기 모델만 받는다. 다른 형식은 시작할 때 거부한다. 변환과 검증 방법은 [모델 문서](../models/README.md).
 
 ## 설정
 
 `MODEL_PATH`(기본 `/models/ppe_yolov8.onnx`), `CONF_THRES`(0.4), `IOU_THRES`(0.45), `ORT_THREADS`(3). 모델은 시작 때 한 번만 불러오고, 판정은 한 번에 한 장씩 한다 (Pi 5 4GB, uvicorn worker 1개).
+
+요청은 비동기로 순서를 기다린 뒤 JPEG 디코딩·전처리·추론·판정을 한 장씩 처리한다. 기다리는 동안 작업 스레드를 점유하지 않으며 `/health`는 추론과 별도로 응답한다. JPEG가 아닌 이미지와 2MB를 넘는 본문은 거부하고, 긴 비율의 JPEG도 축소 후 변 길이가 최소 1픽셀이 되도록 처리한다.
 
 ## 테스트
 
@@ -39,4 +42,6 @@ cd .. && pytest tests/pi/inference
 
 - `test_predict_input.py`: 오류 코드 (모델 없이도 돈다)
 - `test_predict_contract.py`: 응답 형식과 사진별 판정 (`@pytest.mark.model`, `pi/models/ppe_yolov8.onnx`가 있을 때만)
-- 사진을 더하려면 `tests/fixtures/images/`에 넣고 `tests/pi/inference/expected.json`에 기대 판정을 한 줄 적는다. 안전모·조끼를 착용한 사진, 안 한 사진이 하나씩은 있어야 판정을 제대로 확인할 수 있다.
+- `test_predict_concurrency.py`: 실제 모델에 48개 요청을 보내는 동안 상태 확인과 모든 응답을 검사한다.
+- 실제 사진은 `tests/pi/inference/images/`, 공통 빈 화면은 `tests/fixtures/images/`에서 읽는다. 출처·라이선스·기대 판정 근거는 [사진 문서](../../tests/pi/inference/images/README.md)에 기록한다.
+- `expected.json`은 착용, 두 장비 미착용, 조끼 미착용, 사람 없음 4가지를 검사한다. 기대값을 모델 출력에 맞춰 바꾸지 않는다.

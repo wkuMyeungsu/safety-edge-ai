@@ -36,7 +36,8 @@ def letterbox(image: np.ndarray, size: int):
     """비율을 지키며 size×size에 맞추고 남는 곳은 회색(114)으로 채운다 (ultralytics와 같은 방식)."""
     h, w = image.shape[:2]
     r = min(size / h, size / w)
-    nw, nh = round(w * r), round(h * r)
+    # 매우 긴 JPEG도 반대쪽 변이 0으로 반올림되지 않게 한다.
+    nw, nh = max(1, round(w * r)), max(1, round(h * r))
     dw, dh = (size - nw) / 2, (size - nh) / 2
     resized = cv2.resize(image, (nw, nh), interpolation=cv2.INTER_LINEAR) if (nw, nh) != (w, h) else image
     top, left = round(dh - 0.1), round(dw - 0.1)
