@@ -44,6 +44,24 @@ def test_queued_frame_is_processed(gateway_url, image_bytes):
     assert entry["received_at"].endswith("+00:00")
 
 
+def test_person_headers_are_recorded(gateway_url, image_bytes):
+    # ESP32가 보내는 선택 헤더 (docs/contracts/frame.md). 숫자가 아니면 null로 두고 사진은 받는다
+    device_id = f"test-{uuid.uuid4().hex[:8]}"
+    headers = {"Content-Type": "image/jpeg", "X-Device-Id": device_id, "X-Person-Score": "0.87", "X-Person-Count": "2"}
+    r = requests.post(f"{gateway_url}/frame", data=image_bytes("blank.jpg"), headers=headers, timeout=10)
+    assert r.status_code == 202
+    entry = wait_recent(gateway_url, device_id)
+    assert entry["person_score"] == 0.87
+    assert entry["person_count"] == 2
+
+    device_id = f"test-{uuid.uuid4().hex[:8]}"
+    headers.update({"X-Device-Id": device_id, "X-Person-Score": "high", "X-Person-Count": "x"})
+    r = requests.post(f"{gateway_url}/frame", data=image_bytes("blank.jpg"), headers=headers, timeout=10)
+    assert r.status_code == 202
+    entry = wait_recent(gateway_url, device_id)
+    assert entry["person_score"] is None and entry["person_count"] is None
+
+
 @pytest.mark.parametrize("device_id", [None, "", "../etc", "a" * 65, "cam 01"])
 def test_bad_device_id_is_400(gateway_url, device_id):
     assert post(gateway_url, device_id=device_id).status_code == 400

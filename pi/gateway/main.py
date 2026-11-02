@@ -6,9 +6,12 @@
 - GET  /recent   최근 처리 결과 (디버깅·테스트용)
 처리 작업자는 1개다. inference가 한 번에 한 장씩 처리하기 때문이다.
 대기 줄이 가득 차면 새 사진은 503으로 거절한다 (ESP32는 버리고 다음 사진을 보낸다).
+인터넷(Tailscale Funnel 등 프록시)을 거쳐 온 요청은 X-Device-Token이 GATEWAY_TOKEN과 같아야 받는다.
+같은 네트워크에서 바로 온 요청은 토큰 없이 받는다.
 """
 
 import asyncio
+import hmac
 import json
 import logging
 import os
@@ -32,6 +35,9 @@ QUEUE_MAX = int(os.environ.get("QUEUE_MAX", "4"))
 INFERENCE_TIMEOUT = float(os.environ.get("INFERENCE_TIMEOUT", "10"))
 UPLOADER_TIMEOUT = float(os.environ.get("UPLOADER_TIMEOUT", "15"))  # uploader는 Supabase를 최대 10초 기다린다
 RECENT_MAX = 50
+GATEWAY_TOKEN = os.environ.get("GATEWAY_TOKEN", "")
+# 프록시(Tailscale Funnel, Cloudflare 등)가 붙이는 헤더. 하나라도 있으면 인터넷을 거쳐 온 요청으로 본다
+PROXY_HEADERS = ("x-forwarded-for", "forwarded", "cf-connecting-ip", "tailscale-funnel-request")
 
 MAX_BYTES = 2 * 1024 * 1024  # inference 제한과 같다
 DEVICE_ID = re.compile(r"^[A-Za-z0-9_-]{1,64}$")  # uploader 검사와 같다
@@ -47,6 +53,8 @@ class Frame:
     image: bytes
     received_at: datetime
     queued: float  # time.monotonic()
+    person_score: float | None = None  # ESP32 사람 감지 점수 (X-Person-Score, 선택)
+    person_count: int | None = None  # ESP32가 찾은 사람 수 (X-Person-Count, 선택)
 
 
 queue: asyncio.Queue[Frame] = asyncio.Queue(maxsize=QUEUE_MAX)
@@ -55,7 +63,7 @@ recent: deque = deque(maxlen=RECENT_MAX)
 
 
 def error(code: int, detail: str, status: str = "rejected") -> JSONResponse:
-    stats["rejected" if code != 503 else "busy"] += 1
+    stats[{401: "unauthorized", 503: "busy"}.get(code, "rejected")] += 1
     log.warning("거부 %d: %s", code, detail)
     return JSONResponse({"status": status, "detail": detail}, status_code=code)
 
@@ -100,6 +108,8 @@ async def process(client: httpx.AsyncClient, frame: Frame) -> dict:
         "device_id": frame.device_id,
         "received_at": frame.received_at.isoformat(),
         "wait_ms": round((started - frame.queued) * 1000),
+        "person_score": frame.person_score,
+        "person_count": frame.person_count,
         "verdict": None,
         "upload": None,
     }
@@ -155,8 +165,22 @@ async def get_recent(device_id: str | None = None):
     return {"items": items[::-1]}  # 최근 것부터
 
 
+def number(value: str | None, kind):
+    """선택 헤더 값. 없거나 숫자가 아니면 None (잘못된 값 때문에 사진을 버리지 않는다)."""
+    try:
+        return kind(value) if value is not None else None
+    except ValueError:
+        return None
+
+
 @app.post("/frame")
 async def frame(request: Request):
+    if any(h in request.headers for h in PROXY_HEADERS):
+        if not GATEWAY_TOKEN:
+            return error(401, "GATEWAY_TOKEN이 설정되지 않아 인터넷을 거친 요청은 받지 않음")
+        if not hmac.compare_digest(request.headers.get("x-device-token", "").encode(), GATEWAY_TOKEN.encode()):
+            return error(401, "X-Device-Token이 없거나 틀림")
+
     device_id = request.headers.get("x-device-id", "")
     if not DEVICE_ID.match(device_id):
         return error(400, "X-Device-Id 헤더는 영문·숫자·-·_ 1~64자")
@@ -169,7 +193,8 @@ async def frame(request: Request):
     if not body.startswith(b"\xff\xd8\xff"):
         return error(400, "본문이 JPEG가 아님 (JPEG 바이트를 그대로 보낸다)")
 
-    item = Frame(device_id, bytes(body), datetime.now(timezone.utc), time.monotonic())
+    item = Frame(device_id, bytes(body), datetime.now(timezone.utc), time.monotonic(),
+                 number(request.headers.get("x-person-score"), float), number(request.headers.get("x-person-count"), int))
     try:
         queue.put_nowait(item)
     except asyncio.QueueFull:

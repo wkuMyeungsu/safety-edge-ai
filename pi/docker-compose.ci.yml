@@ -2,6 +2,9 @@
 # 사용: docker compose -f docker-compose.yml -f docker-compose.ci.yml up -d --wait
 # Pi 운영에서는 쓰지 않는다 (외부 공개 포트는 gateway 8001뿐).
 services:
+  gateway:
+    environment:
+      GATEWAY_TOKEN: ci-test-token   # tests/pi/gateway가 같은 값을 쓴다
   inference:
     ports: ["8003:8003"]
   uploader:

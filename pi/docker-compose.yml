@@ -16,6 +16,7 @@ services:
       PORT: "8001"
       INFERENCE_URL: http://inference:8003
       UPLOADER_URL: http://uploader:8004
+      GATEWAY_TOKEN: ${GATEWAY_TOKEN:-}   # pi/.env. 인터넷을 거친 요청에만 검사 (docs/contracts/frame.md)
     ports: ["8001:8001"]
     depends_on: [inference, uploader]
     mem_limit: 256m
