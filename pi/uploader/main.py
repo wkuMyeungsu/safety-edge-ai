@@ -241,7 +241,9 @@ async def records(request: Request, result: str = Form(...), image: UploadFile =
     rid = save_to_buffer(row, data)
 
     client = request.app.state.client
-    if client is not None:
+    # 재시도 작업이 보내는 중이면 기다리지 않는다. 기다리면 gateway 제한 시간(15초)을 넘을 수 있다.
+    # 이 기록은 버퍼에 있으니 다음 재시도 때 올라간다.
+    if client is not None and not send_lock.locked():
         new_id = await try_send(client, rid)
         if new_id is not None:
             log.info("저장 %s → safety_logs.id=%s (%s)", rid, new_id, row["device_id"])
