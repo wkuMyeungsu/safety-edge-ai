@@ -356,13 +356,13 @@ footer { color: var(--muted); font-size: 0.8rem; border-top: 1px solid var(--lin
             <li>96×96으로 축소</li>
             <li>Edge Impulse 사람 감지 <span class="model-tag">모델 1</span></li>
             <li>사람 있음 + 쿨다운 3초 경과<br><span class="branch">아니면 대기</span></li>
-            <li>원본 JPEG (QVGA/VGA) HTTP POST</li>
+            <li>축소 전 JPEG (권장 VGA 640×480) HTTP POST</li>
           </ol>
         </div>
 
         <div class="wire hi">
           <span class="arrow"><span class="h">→</span><span class="v">↓</span></span>
-          <span class="w-label">POST /frame<br>JPEG + device_id</span>
+          <span class="w-label">POST /frame<br>JPEG + X-Device-Id</span>
         </div>
 
         <div class="device">
@@ -373,7 +373,7 @@ footer { color: var(--muted); font-size: 0.8rem; border-top: 1px solid var(--lin
             <div class="dock-grid">
               <div class="svc gw">
                 <div class="svc-name">gateway <span class="port">:8001</span></div>
-                <ul><li>FastAPI, ESP32 사진 수신</li><li>대기 줄 최대 2, 넘치면 버림</li><li>inference → uploader 순서 관리</li></ul>
+                <ul><li>FastAPI, ESP32 사진 수신</li><li>대기 줄 최대 4, 넘치면 503으로 거절</li><li>inference → uploader 순서 관리</li></ul>
               </div>
               <div class="wire w1">
                 <span class="arrow"><span class="h">⇄</span><span class="v">⇅</span></span>
@@ -381,7 +381,7 @@ footer { color: var(--muted); font-size: 0.8rem; border-top: 1px solid var(--lin
               </div>
               <div class="svc inf">
                 <div class="svc-name">inference <span class="port">:8003</span></div>
-                <ul><li>onnxruntime (CPU)</li><li>YOLOv8 PPE <span class="model-tag">모델 2</span></li><li>안전모·조끼 → pass | fail</li></ul>
+                <ul><li>onnxruntime (CPU)</li><li>YOLOv8 PPE <span class="model-tag">모델 2</span></li><li>안전모·조끼 → pass | fail | no_person</li></ul>
               </div>
               <div class="wire w2 hi vertical">
                 <span class="arrow"><span class="h">→</span><span class="v">↓</span></span>
@@ -393,13 +393,13 @@ footer { color: var(--muted); font-size: 0.8rem; border-top: 1px solid var(--lin
               </div>
               <div class="svc up">
                 <div class="svc-name">uploader <span class="port">:8004</span></div>
-                <ul><li>Supabase 저장·사진 업로드</li><li>실패하면 버퍼에 쌓고 재시도</li><li><code>.env</code>의 service key 사용</li></ul>
+                <ul><li>받은 기록을 먼저 버퍼에 저장</li><li>Supabase 사진 업로드 → 행 저장</li><li>실패분은 30초마다 재시도</li><li><code>.env</code>의 service key 사용</li></ul>
               </div>
               <div class="vol volm">
                 <span class="mono">./models</span>
-                <span class="sub">ppe_yolov8.onnx (이미지 밖에 보관)</span>
+                <span class="sub">ppe_yolov8.onnx (Release <code>model-v1</code>에서 받음, git 제외)</span>
                 <span class="mono" style="margin-top:6px">./buffer</span>
-                <span class="sub">업로드 실패분 보관 (uploader에 마운트)</span>
+                <span class="sub">보내기 전·실패한 기록 보관 (uploader에 마운트)</span>
               </div>
             </div>
           </div>
@@ -432,9 +432,9 @@ footer { color: var(--muted); font-size: 0.8rem; border-top: 1px solid var(--lin
         <div class="device">
           <div class="device-head"><h3>Web</h3><span class="sub">정적 페이지</span></div>
           <ul class="chain">
-            <li>위반 기록 목록</li>
-            <li>위반 사진 썸네일</li>
-            <li>오늘 위반 수</li>
+            <li>위반 수 (오늘 · 7일 · 전체)<br><span class="branch">안전모 · 조끼별 건수, 마지막 위반</span></li>
+            <li>위반 목록 · 사진 썸네일<br><span class="branch">종류 · 장치로 거르기</span></li>
+            <li>사진 크게 보기</li>
           </ul>
         </div>
         <div class="wire">
@@ -456,11 +456,11 @@ footer { color: var(--muted); font-size: 0.8rem; border-top: 1px solid var(--lin
   <ol class="flow">
     <li><div><span class="where">ESP32-S3</span>카메라 프레임을 96×96으로 줄여 Edge Impulse 사람 감지 모델을 돌린다. 사람이 없으면 아무것도 보내지 않는다.</div></li>
     <li><div><span class="where">ESP32-S3</span>사람이 감지되고 마지막 전송 뒤 3초가 지났으면, 축소 전 원본 JPEG를 <code>POST /frame</code>으로 gateway에 보낸다.</div></li>
-    <li><div><span class="where">gateway</span>대기 줄에 자리가 있으면 받아 넣고 <code>202</code>를 돌려준다. 대기 줄이 차 있으면 <code>503</code>을 돌려주고 사진을 버린다. 받은 수와 버린 수는 로그로 남긴다.</div></li>
-    <li><div><span class="where">gateway → inference</span>대기 줄에서 꺼낸 사진을 <code>POST /predict</code>로 보낸다. inference는 YOLOv8 PPE ONNX 모델로 안전모·조끼를 찾아 판정 결과 JSON을 돌려준다.</div></li>
-    <li><div><span class="where">gateway</span>판정이 <span class="verdict-ok">pass</span>면 로그만 남기고 끝낸다. <span class="verdict-fail">fail</span>이면 판정 결과와 JPEG를 uploader로 넘긴다.</div></li>
-    <li><div><span class="where">uploader → Supabase</span>사진을 violations 버킷에 올리고, 받은 URL과 함께 safety_logs에 한 행을 넣는다. 실패하면 <code>./buffer</code>에 저장해 두고 재시도한다.</div></li>
-    <li><div><span class="where">Web</span>Realtime으로 새 행 알림을 받아 목록과 오늘 위반 수를 갱신한다.</div></li>
+    <li><div><span class="where">gateway</span><code>X-Device-Id</code>와 JPEG 형식·크기(2MB 이하)를 검사해 틀리면 <code>400</code>·<code>413</code>을 돌려준다. 통과하면 받은 시각을 <code>detected_at</code>으로 붙여 대기 줄에 넣고, 판정을 기다리지 않고 바로 <code>202</code>를 돌려준다. 대기 줄(4장)이 차 있으면 <code>503</code>을 돌려주고, ESP32는 그 사진을 다시 보내지 않는다.</div></li>
+    <li><div><span class="where">gateway → inference</span>작업자 1개가 대기 줄에서 한 장씩 꺼내 <code>POST /predict</code>로 보낸다 (제한 시간 10초). inference는 YOLOv8 PPE ONNX 모델로 사람·안전모·조끼를 찾아 판정 결과 JSON을 돌려준다.</div></li>
+    <li><div><span class="where">gateway</span>판정이 <span class="verdict-ok">pass</span>·<code>no_person</code>이거나 inference 오류면 로그만 남기고 끝낸다. <span class="verdict-fail">fail</span>이면 판정 결과에 <code>device_id</code>·<code>detected_at</code>을 더해 JPEG와 함께 uploader로 넘긴다. 처리 결과는 <code>GET /recent</code>로 최근 50건을 볼 수 있다.</div></li>
+    <li><div><span class="where">uploader → Supabase</span>받은 기록과 사진을 먼저 <code>./buffer</code>에 파일로 남긴다. 사진을 violations 버킷에 올리고 공개 URL과 함께 safety_logs에 한 행을 넣는다. 성공하면 버퍼에서 지우고 <code>201</code>, 실패하면 <code>202</code>(buffered)를 돌려주고 30초마다 다시 보낸다. Supabase가 거절한 기록(4xx)은 <code>buffer/failed/</code>로 옮긴다.</div></li>
+    <li><div><span class="where">Web</span>Realtime으로 safety_logs INSERT 알림을 받아 위반 수와 목록을 갱신한다.</div></li>
   </ol>
 </section>
 
@@ -470,13 +470,13 @@ footer { color: var(--muted); font-size: 0.8rem; border-top: 1px solid var(--lin
   <h2 id="h-links">구간별 통신</h2>
   <div class="table-wrap">
     <table>
-      <thead><tr><th>구간</th><th>방식</th><th>내용</th><th>인증</th></tr></thead>
+      <thead><tr><th>구간</th><th>방식</th><th>내용</th><th>인증</th><th>계약</th></tr></thead>
       <tbody>
-        <tr><td>ESP32 → gateway</td><td>HTTP POST · LAN</td><td>사람이 감지된 프레임 JPEG 1장, 헤더에 <code>device_id</code></td><td>없음 (LAN 내부)</td></tr>
-        <tr><td>gateway ⇄ inference</td><td>HTTP · compose 내부망</td><td>JPEG → 판정 JSON</td><td>없음 (외부 포트 미개방)</td></tr>
-        <tr><td>gateway → uploader</td><td>HTTP · compose 내부망</td><td>fail 판정 JSON + JPEG</td><td>없음 (외부 포트 미개방)</td></tr>
-        <tr><td>uploader → Supabase</td><td>HTTPS</td><td>safety_logs 행 저장, violations 버킷 업로드</td><td>service key (파이에만 보관)</td></tr>
-        <tr><td>Web → Supabase</td><td>HTTPS + WebSocket</td><td>safety_logs 조회, INSERT 실시간 구독, 사진 URL</td><td>anon key + RLS 읽기 전용</td></tr>
+        <tr><td>ESP32 → gateway</td><td>HTTP POST · LAN</td><td>본문 = JPEG 바이트 1장, 헤더 <code>X-Device-Id</code></td><td>없음 (LAN 내부)</td><td><a href="contracts/frame.md">frame.md</a></td></tr>
+        <tr><td>gateway ⇄ inference</td><td>HTTP · compose 내부망</td><td>본문 = JPEG 바이트 → 판정 JSON</td><td>없음 (외부 포트 미개방)</td><td><a href="contracts/inference.md">inference.md</a></td></tr>
+        <tr><td>gateway → uploader</td><td>HTTP · compose 내부망</td><td>multipart: <code>result</code>(fail 판정 JSON) + <code>image</code>(JPEG)</td><td>없음 (외부 포트 미개방)</td><td><a href="contracts/record-storage.md">record-storage.md</a></td></tr>
+        <tr><td>uploader → Supabase</td><td>HTTPS</td><td>violations 버킷 업로드, safety_logs 행 저장</td><td>service key (파이에만 보관)</td><td><a href="contracts/storage.md">storage.md</a></td></tr>
+        <tr><td>Web → Supabase</td><td>HTTPS + WebSocket</td><td>safety_logs 조회, INSERT 실시간 구독, 사진 공개 URL</td><td>anon key + RLS 읽기 전용</td><td><a href="contracts/storage.md">storage.md</a></td></tr>
       </tbody>
     </table>
   </div>
@@ -490,9 +490,9 @@ footer { color: var(--muted); font-size: 0.8rem; border-top: 1px solid var(--lin
     <div class="part">
       <div class="part-head"><h3>gateway</h3><span class="mono">외부 :8001</span></div>
       <ul>
-        <li>FastAPI, <code>POST /frame</code> 하나만 외부에 연다.</li>
-        <li><code>asyncio.Queue(maxsize=2)</code> + 처리 작업자 1개.</li>
-        <li>inference와 uploader를 부르는 순서를 이곳에서만 정한다.</li>
+        <li>FastAPI. 외부로 열린 유일한 서비스: <code>POST /frame</code>, <code>GET /health</code>(대기 줄 길이·처리 건수), <code>GET /recent</code>(최근 50건).</li>
+        <li><code>asyncio.Queue(maxsize=QUEUE_MAX)</code>(기본 4) + 처리 작업자 1개.</li>
+        <li>inference와 uploader를 부르는 순서를 이곳에서만 정한다. 제한 시간은 inference 10초, uploader 15초.</li>
       </ul>
     </div>
     <div class="part">
@@ -501,26 +501,26 @@ footer { color: var(--muted); font-size: 0.8rem; border-top: 1px solid var(--lin
         <li><code>POST /predict</code>: JPEG를 받아 판정 JSON을 돌려준다. 다른 서비스를 부르지 않는다.</li>
         <li>모델은 서버 시작 때 한 번만 불러온다. uvicorn worker는 1개.</li>
         <li>패키지: onnxruntime, numpy, opencv-python-headless, fastapi, uvicorn.</li>
-        <li><code>GET /health</code>로 healthcheck.</li>
+        <li><code>GET /health</code>는 모델이 없어도 200(<code>model_loaded: false</code>)을 준다. 모델이 없을 때 판정 요청은 503.</li>
       </ul>
     </div>
     <div class="part">
       <div class="part-head"><h3>uploader</h3><span class="mono">내부 :8004</span></div>
       <ul>
-        <li><code>POST /records</code>: 판정 JSON + JPEG를 받아 Supabase에 저장한다.</li>
-        <li>네트워크 오류 때는 <code>./buffer</code>에 파일로 남기고 주기적으로 다시 보낸다.</li>
-        <li>Supabase service key를 가진 유일한 컨테이너.</li>
+        <li><code>POST /records</code>: 판정 JSON + JPEG를 받아 Supabase에 저장한다. 저장하면 201, 버퍼에 남기면 202.</li>
+        <li>받은 기록은 먼저 <code>./buffer</code>에 <code>{id}.json</code>·<code>{id}.jpg</code>로 남기고, 보내는 데 성공하면 지운다. 남은 것은 <code>RETRY_INTERVAL</code>(30초)마다 다시 보낸다.</li>
+        <li>Supabase service key를 가진 유일한 컨테이너. <code>.env</code>가 없으면 받은 기록을 버퍼에만 쌓는다.</li>
       </ul>
     </div>
     <div class="part">
       <div class="part-head"><h3>Supabase 저장 구조</h3><span class="mono">safety_logs</span></div>
       <ul>
         <li><code>id</code> bigint identity, 기본 키</li>
-        <li><code>created_at</code> timestamptz, 기본값 now()</li>
+        <li><code>created_at</code> timestamptz, gateway가 사진을 받은 시각(<code>detected_at</code>). 버퍼에서 늦게 올라가도 유지</li>
         <li><code>device_id</code> text</li>
         <li><code>has_helmet</code>, <code>has_vest</code> boolean</li>
         <li><code>confidence</code> real</li>
-        <li><code>image_url</code> text, violations 버킷 경로</li>
+        <li><code>image_url</code> text, violations 버킷 공개 URL. 경로는 <code>{device_id}/{YYYY-MM-DD}/{uuid}.jpg</code></li>
       </ul>
     </div>
   </div>
@@ -531,71 +531,70 @@ footer { color: var(--muted); font-size: 0.8rem; border-top: 1px solid var(--lin
   <div class="eyebrow">Deployment</div>
   <h2 id="h-compose">docker-compose와 폴더 구조</h2>
   <div class="two">
-<pre><span class="k">services:</span>
+<pre><span class="c"># pi/docker-compose.yml (요약)</span>
+<span class="k">services:</span>
   <span class="k">gateway:</span>
-    build: ./services/gateway
-    ports: ["8001:8001"]
+    build: ./gateway
+    ports: ["8001:8001"]   <span class="c"># 외부로 여는 유일한 포트</span>
     environment:
       INFERENCE_URL: http://inference:8003
       UPLOADER_URL: http://uploader:8004
-      QUEUE_MAX: "2"
     depends_on: [inference, uploader]
     mem_limit: 256m
-    restart: unless-stopped
 
   <span class="k">inference:</span>
-    build: ./services/inference
+    build: ./inference
     volumes: ["./models:/models:ro"]
     environment:
       MODEL_PATH: /models/ppe_yolov8.onnx
-      ORT_THREADS: "3"
-      CONF_THRES: "0.4"
     mem_limit: 1g
-    cpus: "3"
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "python", "-c",
-        "import urllib.request;urllib.request.urlopen('http://localhost:8003/health')"]
-      interval: 15s
 
   <span class="k">uploader:</span>
-    build: ./services/uploader
-    env_file: .env     <span class="c"># SUPABASE_URL, SUPABASE_SERVICE_KEY</span>
+    build: ./uploader
+    env_file:              <span class="c"># SUPABASE_URL, SUPABASE_SERVICE_KEY</span>
+      - path: .env
+        required: false
     volumes: ["./buffer:/buffer"]
     mem_limit: 256m
-    restart: unless-stopped
+
+<span class="c"># 세 서비스 공통: restart: unless-stopped,</span>
+<span class="c"># healthcheck = GET /health (15초 간격)</span>
 </pre>
-<pre>safety-system/
-├─ docker-compose.yml
-├─ .env              <span class="c"># git 제외</span>
-├─ models/           <span class="c"># git 제외</span>
-│  └─ ppe_yolov8.onnx
-├─ buffer/           <span class="c"># git 제외</span>
-├─ services/
-│  ├─ gateway/
-│  │  ├─ Dockerfile
-│  │  └─ app.py
-│  ├─ inference/
-│  │  ├─ Dockerfile
-│  │  └─ app.py
-│  └─ uploader/
-│     ├─ Dockerfile
-│     └─ app.py
-├─ web/
-├─ firmware/esp32/
-└─ tools/
-   ├─ export_onnx.py
-   ├─ verify_onnx.py
-   └─ post_test_image.py</pre>
+<pre>safety-edge-ai/
+├─ esp32/
+│  ├─ model/          <span class="c"># Edge Impulse 라이브러리 zip</span>
+│  └─ firmware/safety_cam/
+│     ├─ safety_cam.ino
+│     └─ config.h     <span class="c"># git 제외</span>
+├─ pi/
+│  ├─ docker-compose.yml
+│  ├─ .env            <span class="c"># git 제외</span>
+│  ├─ gateway/        <span class="c"># Dockerfile, main.py</span>
+│  ├─ inference/      <span class="c"># + detector.py</span>
+│  ├─ uploader/
+│  ├─ models/
+│  │  ├─ ppe_yolov8.onnx  <span class="c"># git 제외</span>
+│  │  ├─ export_onnx.py
+│  │  ├─ verify_onnx.py
+│  │  └─ run_http_smoke.py
+│  └─ buffer/         <span class="c"># git 제외</span>
+├─ cloud/supabase/schema.sql
+├─ web/               <span class="c"># 정적 페이지</span>
+├─ tests/             <span class="c"># 파트별 HTTP 테스트</span>
+└─ docs/
+   ├─ architecture.html
+   ├─ decisions.md
+   └─ contracts/</pre>
   </div>
   <ul class="note-list">
-    <li>베이스 이미지는 <code>python:3.11-slim</code>(arm64 제공)이고, 이미지는 파이에서 <code>docker compose build</code>로 직접 빌드한다.</li>
+    <li>베이스 이미지는 <code>python:3.12-slim</code>(arm64 제공)이고, 이미지는 파이에서 <code>docker compose up --build</code>로 직접 빌드한다.</li>
     <li>ultralytics와 torch는 PC에서 ONNX로 변환할 때만 쓰고, 파이 이미지에는 넣지 않는다.</li>
+    <li>inference의 <code>ORT_THREADS</code>(3), <code>CONF_THRES</code>(0.4), <code>IOU_THRES</code>(0.45), gateway의 <code>QUEUE_MAX</code>(4)는 코드 기본값이다. 바꿀 때만 compose <code>environment</code>에 적는다.</li>
     <li><code>mem_limit</code> 값은 시작값이다. <code>docker stats</code>로 실제 사용량을 확인해 조정한다.</li>
-    <li>외부로 열리는 포트는 gateway의 8001뿐이다. inference와 uploader는 compose 내부망에서만 접근된다.</li>
+    <li>inference와 uploader는 compose 내부망에서만 접근된다.</li>
   </ul>
 </section>
 
-<footer>저장 범위: 위반(fail) 건만 Supabase에 기록과 사진을 저장한다. pass 건은 gateway 로그에만 남는다.</footer>
+<footer>저장 범위: 위반(fail) 건만 Supabase에 기록과 사진을 저장한다. pass·no_person 건은 gateway 로그와 <code>GET /recent</code>에만 남는다.</footer>
 
 </div>
