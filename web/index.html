@@ -4,9 +4,95 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>안전장비 위반 기록</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <h1>안전장비 위반 기록</h1>
-  <p>뼈대 페이지. cloud 담당자가 Supabase 조회를 채운다.</p>
+  <div class="hazard" aria-hidden="true"></div>
+  <div class="wrap">
+    <header class="top">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18h18"/><path d="M5 18v-2a7 7 0 0 1 14 0v2"/><path d="M12 9V5"/><path d="M9 6.5v3"/><path d="M15 6.5v3"/></svg>
+        </div>
+        <div>
+          <h1>안전장비 위반 기록</h1>
+          <p>안전모·조끼 미착용 감지 현황</p>
+        </div>
+      </div>
+      <div class="top-actions">
+        <span class="status" id="status" data-state="idle"><span class="dot"></span><span id="status-text">연결 중…</span></span>
+        <button class="icon-btn" id="theme" type="button" aria-label="화면 테마 바꾸기">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3a9 9 0 1 0 9 9 7 7 0 0 1-9-9z"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <div id="banner" class="banner" hidden></div>
+
+    <section class="stats" aria-label="오늘 요약">
+      <div class="stat primary" id="stat-today">
+        <div class="label">오늘 위반</div>
+        <div class="value mono" id="v-today">–</div>
+        <div class="sub">자정부터 지금까지</div>
+      </div>
+      <div class="stat">
+        <div class="label">안전모 미착용 (오늘)</div>
+        <div class="value mono" id="v-helmet">–</div>
+      </div>
+      <div class="stat">
+        <div class="label">조끼 미착용 (오늘)</div>
+        <div class="value mono" id="v-vest">–</div>
+      </div>
+      <div class="stat">
+        <div class="label">마지막 감지</div>
+        <div class="value small" id="v-last">–</div>
+        <div class="sub mono" id="v-last-device"></div>
+      </div>
+    </section>
+
+    <section aria-labelledby="h-list">
+      <div class="toolbar">
+        <h2 id="h-list">위반 목록<span class="count mono" id="list-count"></span></h2>
+        <div class="filters">
+          <div class="seg" role="group" aria-label="기간">
+            <button type="button" data-range="today" aria-pressed="true">오늘</button>
+            <button type="button" data-range="7d" aria-pressed="false">7일</button>
+            <button type="button" data-range="all" aria-pressed="false">전체</button>
+          </div>
+          <select id="f-kind" aria-label="위반 종류">
+            <option value="all">모든 위반</option>
+            <option value="helmet">안전모 미착용</option>
+            <option value="vest">조끼 미착용</option>
+          </select>
+          <select id="f-device" aria-label="장치">
+            <option value="">모든 장치</option>
+          </select>
+        </div>
+      </div>
+      <div class="list" id="list" aria-live="polite"></div>
+      <div class="more"><button type="button" id="more" hidden>더 보기</button></div>
+    </section>
+
+    <footer>Supabase <span class="mono">safety_logs</span> 테이블을 anon key로 읽기만 합니다. 새 위반은 실시간으로 맨 위에 추가됩니다.</footer>
+  </div>
+
+  <dialog class="viewer" id="viewer">
+    <img id="viewer-img" alt="">
+    <div class="cap">
+      <div>
+        <div id="viewer-when"></div>
+        <div class="mono" id="viewer-device" style="color: var(--ink-3); font-size: 0.8rem"></div>
+      </div>
+      <div class="tags" id="viewer-tags"></div>
+      <button class="icon-btn" type="button" id="viewer-close" aria-label="닫기">✕</button>
+    </div>
+  </dialog>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js"></script>
+  <script src="config.js"></script>
+  <script src="app.js"></script>
 </body>
 </html>
