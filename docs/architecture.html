@@ -329,6 +329,7 @@ pre .k { color: var(--hivis); }
 .note-list { margin: 0; padding-left: 1.1em; display: flex; flex-direction: column; gap: 6px; max-width: 72ch; }
 
 footer { color: var(--muted); font-size: 0.8rem; border-top: 1px solid var(--line); padding-top: 16px; }
+.lede a { color: var(--hivis); }
 </style>
 
 <div class="page">
@@ -337,6 +338,7 @@ footer { color: var(--muted); font-size: 0.8rem; border-top: 1px solid var(--lin
   <div class="tape" aria-hidden="true"></div>
   <h1>안전장비 감지 시스템 구조</h1>
   <p class="lede">ESP32-S3가 사람을 감지한 프레임만 라즈베리 파이 5로 보내고, 파이는 안전모·조끼 착용 여부를 판별해 위반 건을 Supabase에 기록한다. 웹은 Supabase를 직접 조회해 위반 기록을 보여 준다.</p>
+  <p class="lede">이 문서는 시스템 구조만 다룬다. 담당, 원격 시험(Tailscale Funnel), 배포(deploy-pi), 브랜치·CI 규칙은 <a href="cooperation.html">cooperation.html</a>에 있다.</p>
 </header>
 
 <!-- ============ 구조도 ============ -->
@@ -346,7 +348,7 @@ footer { color: var(--muted); font-size: 0.8rem; border-top: 1px solid var(--lin
 
   <div class="arch">
     <div class="zone site">
-      <div class="zone-label">현장 · 같은 Wi-Fi (LAN) · 다른 곳의 ESP32는 Tailscale Funnel(HTTPS)로</div>
+      <div class="zone-label">현장 · 같은 Wi-Fi (LAN)</div>
       <div class="site-grid">
 
         <div class="device">
@@ -362,7 +364,7 @@ footer { color: var(--muted); font-size: 0.8rem; border-top: 1px solid var(--lin
 
         <div class="wire hi">
           <span class="arrow"><span class="h">→</span><span class="v">↓</span></span>
-          <span class="w-label">POST /frame<br>JPEG + X-Device-Id<br>(인터넷이면 + X-Device-Token)</span>
+          <span class="w-label">POST /frame<br>JPEG + X-Device-Id</span>
         </div>
 
         <div class="device">
@@ -455,12 +457,11 @@ footer { color: var(--muted); font-size: 0.8rem; border-top: 1px solid var(--lin
   <h2 id="h-flow">사진 한 장의 처리 순서</h2>
   <ol class="flow">
     <li><div><span class="where">ESP32-S3</span>카메라 프레임(QVGA 320×240)을 64×64로 줄여 Edge Impulse 사람 감지 모델(FOMO)을 돌린다. 사람이 없으면 아무것도 보내지 않는다.</div></li>
-    <li><div><span class="where">ESP32-S3</span>2프레임 연속 사람이 감지되고 마지막 전송 뒤 5초가 지났으면, 축소 전 원본 JPEG를 <code>POST /frame</code>으로 gateway에 보낸다. 감지 점수·사람 수는 <code>X-Person-Score</code>·<code>X-Person-Count</code> 헤더로 함께 보낸다. 다른 네트워크의 ESP32는 Tailscale Funnel HTTPS 주소로 보내고 <code>X-Device-Token</code>을 붙인다.</div></li>
-    <li><div><span class="where">gateway</span>프록시(Funnel)를 거친 요청이면 <code>X-Device-Token</code>을 검사해 틀리면 <code>401</code>을 돌려준다. <code>X-Device-Id</code>와 JPEG 형식·크기(2MB 이하)를 검사해 틀리면 <code>400</code>·<code>413</code>을 돌려준다. 통과하면 사진 번호 <code>frame</code>(8자리 hex)과 받은 시각 <code>detected_at</code>을 붙여 대기 줄에 넣고, 판정을 기다리지 않고 바로 <code>202</code>(본문에 <code>frame</code>)를 돌려준다. 대기 줄(4장)이 차 있으면 <code>503</code>을 돌려주고, ESP32는 그 사진을 다시 보내지 않는다.</div></li>
+    <li><div><span class="where">ESP32-S3</span>2프레임 연속 사람이 감지되고 마지막 전송 뒤 5초가 지났으면, 축소 전 원본 JPEG를 <code>POST /frame</code>으로 gateway에 보낸다. 감지 점수·사람 수는 <code>X-Person-Score</code>·<code>X-Person-Count</code> 헤더로 함께 보낸다.</div></li>
+    <li><div><span class="where">gateway</span><code>X-Device-Id</code>와 JPEG 형식·크기(2MB 이하)를 검사해 틀리면 <code>400</code>·<code>413</code>을 돌려준다. 통과하면 사진 번호 <code>frame</code>(8자리 hex)과 받은 시각 <code>detected_at</code>을 붙여 대기 줄에 넣고, 판정을 기다리지 않고 바로 <code>202</code>(본문에 <code>frame</code>)를 돌려준다. 대기 줄(4장)이 차 있으면 <code>503</code>을 돌려주고, ESP32는 그 사진을 다시 보내지 않는다.</div></li>
     <li><div><span class="where">gateway → inference</span>작업자 1개가 대기 줄에서 한 장씩 꺼내 <code>POST /predict</code>로 보낸다 (헤더 <code>X-Frame-Id</code>, 제한 시간 10초). inference는 YOLOv8 PPE ONNX 모델로 사람·안전모·조끼를 찾아 판정 결과 JSON을 돌려준다.</div></li>
     <li><div><span class="where">gateway</span>판정이 <span class="verdict-ok">pass</span>·<code>no_person</code>이거나 inference 오류면 로그만 남기고 끝낸다. <span class="verdict-fail">fail</span>이면 판정 결과에 <code>device_id</code>·<code>detected_at</code>·<code>frame_id</code>를 더해 JPEG와 함께 uploader로 넘긴다. 처리 결과는 <code>GET /recent</code>로 최근 50건을 볼 수 있다.</div></li>
     <li><div><span class="where">uploader → Supabase</span>받은 기록과 사진을 먼저 <code>./buffer</code>에 파일로 남긴다. 사진을 violations 버킷에 올리고 공개 URL과 함께 safety_logs에 한 행을 넣는다. 성공하면 버퍼에서 지우고 <code>201</code>, 실패하면 <code>202</code>(buffered)를 돌려주고 30초마다 다시 보낸다. Supabase가 거절한 기록(4xx)은 <code>buffer/failed/</code>로 옮긴다.</div></li>
-    <li><div><span class="where">로그</span>세 서비스 로그에 같은 <code>frame=</code>이 찍혀 <code>docker compose logs | grep frame=&lt;번호&gt;</code>로 사진 한 장을 끝까지 따라간다. ESP32 시리얼에는 202 본문의 <code>frame</code>이 찍힌다.</div></li>
     <li><div><span class="where">Web</span>Realtime으로 safety_logs INSERT 알림을 받아 위반 수와 목록을 갱신한다.</div></li>
   </ol>
 </section>
@@ -474,7 +475,6 @@ footer { color: var(--muted); font-size: 0.8rem; border-top: 1px solid var(--lin
       <thead><tr><th>구간</th><th>방식</th><th>내용</th><th>인증</th><th>계약</th></tr></thead>
       <tbody>
         <tr><td>ESP32 → gateway</td><td>HTTP POST · LAN</td><td>본문 = JPEG 바이트 1장, 헤더 <code>X-Device-Id</code> (선택 <code>X-Person-Score</code>·<code>X-Person-Count</code>). 202 본문에 <code>frame</code></td><td>없음 (LAN 내부)</td><td><a href="contracts/frame.md">frame.md</a></td></tr>
-        <tr><td>ESP32 → gateway (다른 네트워크)</td><td>HTTPS · Tailscale Funnel</td><td>위와 같음</td><td><code>X-Device-Token</code> (팀 공용, Pi <code>.env</code>의 <code>GATEWAY_TOKEN</code>)</td><td><a href="contracts/frame.md">frame.md</a></td></tr>
         <tr><td>gateway ⇄ inference</td><td>HTTP · compose 내부망</td><td>본문 = JPEG 바이트 (+ <code>X-Frame-Id</code>) → 판정 JSON</td><td>없음 (외부 포트 미개방)</td><td><a href="contracts/inference.md">inference.md</a></td></tr>
         <tr><td>gateway → uploader</td><td>HTTP · compose 내부망</td><td>multipart: <code>result</code>(fail 판정 JSON + <code>frame_id</code>) + <code>image</code>(JPEG)</td><td>없음 (외부 포트 미개방)</td><td><a href="contracts/record-storage.md">record-storage.md</a></td></tr>
         <tr><td>uploader → Supabase</td><td>HTTPS</td><td>violations 버킷 업로드, safety_logs 행 저장</td><td>service key (파이에만 보관)</td><td><a href="contracts/storage.md">storage.md</a></td></tr>
@@ -493,7 +493,6 @@ footer { color: var(--muted); font-size: 0.8rem; border-top: 1px solid var(--lin
       <div class="part-head"><h3>gateway</h3><span class="mono">외부 :8001</span></div>
       <ul>
         <li>FastAPI. 외부로 열린 유일한 서비스: <code>POST /frame</code>, <code>GET /health</code>(대기 줄 길이·처리 건수), <code>GET /recent</code>(최근 50건, 구간별 시간 <code>wait_ms</code>·<code>infer_ms</code>·<code>upload_ms</code>·<code>total_ms</code>).</li>
-        <li>같은 LAN 요청은 토큰 없이, 프록시 헤더가 붙은 인터넷 요청은 <code>X-Device-Token</code>을 검사한다. <code>GATEWAY_TOKEN</code>이 비어 있으면 인터넷 요청은 모두 401.</li>
         <li><code>asyncio.Queue(maxsize=QUEUE_MAX)</code>(기본 4) + 처리 작업자 1개.</li>
         <li>inference와 uploader를 부르는 순서를 이곳에서만 정한다. 제한 시간은 inference 10초, uploader 15초.</li>
       </ul>
@@ -542,7 +541,6 @@ footer { color: var(--muted); font-size: 0.8rem; border-top: 1px solid var(--lin
     environment:
       INFERENCE_URL: http://inference:8003
       UPLOADER_URL: http://uploader:8004
-      GATEWAY_TOKEN: ${GATEWAY_TOKEN:-}   <span class="c"># pi/.env, 인터넷 요청 검사</span>
     depends_on: [inference, uploader]
     mem_limit: 256m
 
@@ -572,10 +570,8 @@ footer { color: var(--muted); font-size: 0.8rem; border-top: 1px solid var(--lin
 │  └─ firmware/safety_cam/
 │     ├─ safety_cam.ino
 │     └─ config.h     <span class="c"># git 제외</span>
-├─ .github/workflows/ <span class="c"># ci.yml, deploy-pi.yml</span>
 ├─ pi/
 │  ├─ docker-compose.yml
-│  ├─ deploy.sh       <span class="c"># deploy-pi가 Pi에서 실행</span>
 │  ├─ .env            <span class="c"># git 제외</span>
 │  ├─ gateway/        <span class="c"># Dockerfile, main.py</span>
 │  ├─ inference/      <span class="c"># + detector.py</span>
@@ -592,17 +588,17 @@ footer { color: var(--muted); font-size: 0.8rem; border-top: 1px solid var(--lin
 └─ docs/
    ├─ architecture.html
    ├─ api-manual.html
+   ├─ cooperation.html
    ├─ decisions.md
    └─ contracts/</pre>
   </div>
   <ul class="note-list">
     <li>베이스 이미지는 <code>python:3.12-slim</code>(arm64 제공)이고, 이미지는 파이에서 <code>docker compose up --build</code>로 직접 빌드한다.</li>
-    <li>Pi 배포는 GitHub Actions <code>deploy-pi</code>(Pi의 self-hosted runner)로 팀원 누구나 한다. 브랜치를 골라 받고 다시 빌드하며, 시작 로그에 <code>commit=</code>이 찍힌다. 쓰는 법은 <code>pi/README.md</code>.</li>
     <li>로그 시각은 한국 시각(<code>TZ</code>), JSON 안의 시각(<code>detected_at</code>, <code>created_at</code>)은 UTC다.</li>
     <li>ultralytics와 torch는 PC에서 ONNX로 변환할 때만 쓰고, 파이 이미지에는 넣지 않는다.</li>
     <li>inference의 <code>ORT_THREADS</code>(3), <code>CONF_THRES</code>(0.4), <code>IOU_THRES</code>(0.45), gateway의 <code>QUEUE_MAX</code>(4)는 코드 기본값이다. 바꿀 때만 compose <code>environment</code>에 적는다.</li>
     <li><code>mem_limit</code> 값은 시작값이다. <code>docker stats</code>로 실제 사용량을 확인해 조정한다.</li>
-    <li>inference와 uploader는 compose 내부망에서만 접근된다. 인터넷에는 Tailscale Funnel로 gateway(8001)만 열린다. SSH 등 다른 포트는 열지 않는다.</li>
+    <li>inference와 uploader는 compose 내부망에서만 접근된다.</li>
   </ul>
 </section>
 

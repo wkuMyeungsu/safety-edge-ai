@@ -8,6 +8,7 @@ ESP32-S3가 사람을 감지한 프레임만 라즈베리 파이 5로 보내고,
 ```
 
 전체 구조는 `docs/architecture.html`, 파트 사이 데이터 형식은 `docs/contracts/`.
+담당·원격 시험(Tailscale Funnel)·배포(deploy-pi)·브랜치·CI 방법은 `docs/cooperation.html`.
 Pi gateway API는 `docs/api-manual.html`.
 
 ## 파트 · 담당

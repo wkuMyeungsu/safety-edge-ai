@@ -1,0 +1,541 @@
+<title>개발·시험·배포 협업</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: 한 칼럼 기술 문서. 상단 구조도는 장비 → 컨테이너 순으로 상자를 겹쳐 그림. 강조색은 안전 조끼 형광 주황 하나만. */
+:root {
+  --bg: #f2f4f6;
+  --surface: #ffffff;
+  --ink: #16202a;
+  --muted: #5b6876;
+  --line: #c9d1da;
+  --zone-site: #e7ecf1;
+  --zone-cloud: #eceef7;
+  --dock: #f7f9fb;
+  --hivis: #d9480f;
+  --hivis-soft: #fff0e6;
+  --ok: #2b7a4b;
+  --fail: #c92a2a;
+  --code-bg: #eaeef2;
+  --font-body: "IBM Plex Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "Cascadia Code", Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #11161c; --surface: #18202a; --ink: #e6ebf0; --muted: #95a3b2; --line: #2e3a48;
+    --zone-site: #151c24; --zone-cloud: #161a27; --dock: #1b2430;
+    --hivis: #ff8a3d; --hivis-soft: #3a2416; --ok: #5cc58a; --fail: #ff6b6b; --code-bg: #0d1217;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #11161c; --surface: #18202a; --ink: #e6ebf0; --muted: #95a3b2; --line: #2e3a48;
+  --zone-site: #151c24; --zone-cloud: #161a27; --dock: #1b2430;
+  --hivis: #ff8a3d; --hivis-soft: #3a2416; --ok: #5cc58a; --fail: #ff6b6b; --code-bg: #0d1217;
+  color-scheme: dark;
+}
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.65;
+}
+.page {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding-block: 40px 72px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: flex;
+  flex-direction: column;
+  gap: 56px;
+}
+h1, h2, h3 { text-wrap: balance; line-height: 1.3; margin: 0; }
+h1 { font-size: 1.9rem; font-weight: 700; letter-spacing: -0.01em; }
+h2 { font-size: 1.3rem; font-weight: 700; }
+h3 { font-size: 1rem; font-weight: 600; }
+p { margin: 0; max-width: 68ch; }
+code, .mono { font-family: var(--font-mono); font-size: 0.86em; }
+:not(pre) > code { background: var(--code-bg); padding: 1px 5px; border-radius: 4px; }
+
+/* 머리말: 반사 테이프 띠 */
+header { display: flex; flex-direction: column; gap: 14px; }
+.tape {
+  height: 10px;
+  width: 168px;
+  background: repeating-linear-gradient(-45deg, var(--hivis) 0 12px, transparent 12px 20px);
+  border-radius: 2px;
+}
+.lede { color: var(--muted); font-size: 1.02rem; }
+
+section.block { display: flex; flex-direction: column; gap: 18px; }
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+/* ===== 구조도 ===== */
+.arch { display: flex; flex-direction: column; gap: 0; }
+.zone {
+  border: 1.5px dashed var(--line);
+  border-radius: 14px;
+  padding: 22px 18px 18px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.zone.site { background: var(--zone-site); }
+.zone.cloud { background: var(--zone-cloud); }
+.zone-label {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.site-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 0.85fr) auto minmax(0, 2fr);
+  gap: 0;
+  align-items: stretch;
+}
+.device {
+  background: var(--surface);
+  border: 1.5px solid var(--ink);
+  border-radius: 10px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+.device-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; }
+.device-head h3 { font-size: 1.02rem; }
+.sub { color: var(--muted); font-size: 0.8rem; }
+
+.chain { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0; }
+.chain li {
+  font-size: 0.86rem;
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--dock);
+}
+.chain li + li { margin-top: 18px; position: relative; }
+.chain li + li::before {
+  content: "↓";
+  position: absolute;
+  top: -19px; left: 14px;
+  color: var(--muted);
+  font-size: 0.8rem;
+  line-height: 18px;
+}
+.chain .branch { color: var(--muted); font-size: 0.78rem; }
+
+.model-tag {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--hivis);
+  background: var(--hivis-soft);
+  border: 1px solid var(--hivis);
+  border-radius: 999px;
+  padding: 0 7px;
+  margin-left: 4px;
+  vertical-align: 1px;
+  white-space: nowrap;
+}
+
+/* 연결선 */
+.wire {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 8px 10px;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--muted);
+  text-align: center;
+  min-width: 0;
+}
+.wire .arrow { font-size: 1.1rem; color: var(--ink); line-height: 1; }
+.wire .arrow .v { display: none; }
+.wire.hi .arrow, .wire.hi .w-label { color: var(--hivis); }
+.wire.vertical .arrow .h { display: none; }
+.wire.vertical .arrow .v { display: inline; }
+
+.os-line { font-size: 0.8rem; color: var(--muted); }
+.dock {
+  border: 1.5px solid var(--line);
+  border-radius: 8px;
+  background: var(--dock);
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.dock-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  grid-template-areas:
+    "gw   w1   inf"
+    "w2   .    w3"
+    "up   .    vol";
+  align-items: stretch;
+}
+.svc {
+  background: var(--surface);
+  border: 1px solid var(--ink);
+  border-radius: 8px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.svc-name { font-family: var(--font-mono); font-weight: 600; font-size: 0.88rem; }
+.svc-name .port { color: var(--hivis); font-weight: 600; }
+.svc ul { margin: 0; padding-left: 1.1em; font-size: 0.8rem; color: var(--muted); }
+.vol {
+  border: 1px dashed var(--muted);
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 0.8rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.vol .mono { font-weight: 600; }
+.vol .sub { font-size: 0.76rem; }
+.gw { grid-area: gw; } .inf { grid-area: inf; } .up { grid-area: up; } .volm { grid-area: vol; }
+.w1 { grid-area: w1; } .w2 { grid-area: w2; } .w3 { grid-area: w3; }
+.w2, .w3 { padding-block: 6px; }
+
+.cloud-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) auto minmax(0, 1fr) auto minmax(0, 0.7fr);
+  align-items: stretch;
+}
+.sb-parts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.sb-part {
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--dock);
+  padding: 7px 10px;
+  font-size: 0.8rem;
+  min-width: 0;
+}
+.sb-part b { display: block; font-family: var(--font-mono); font-size: 0.78rem; }
+.sb-part span { color: var(--muted); }
+.viewer { border-style: dashed; border-color: var(--muted); }
+
+.uplink { padding-block: 10px; }
+
+@media (max-width: 880px) {
+  .site-grid { grid-template-columns: minmax(0, 1fr); }
+  .site-grid > .wire .arrow .h { display: none; }
+  .site-grid > .wire .arrow .v { display: inline; }
+  .dock-grid {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: "gw" "w1" "inf" "w3" "vol" "w2" "up";
+  }
+  .dock-grid .w1 .arrow .h { display: none; }
+  .dock-grid .w1 .arrow .v { display: inline; }
+  .cloud-grid { grid-template-columns: minmax(0, 1fr); }
+  .cloud-grid > .wire .arrow .h { display: none; }
+  .cloud-grid > .wire .arrow .v { display: inline; }
+}
+@media (max-width: 520px) {
+  .sb-parts { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* ===== 흐름 ===== */
+.flow { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0; counter-reset: step; }
+.flow li {
+  counter-increment: step;
+  display: grid;
+  grid-template-columns: 2.4rem minmax(0, 1fr);
+  gap: 12px;
+  padding: 12px 0;
+  border-top: 1px solid var(--line);
+}
+.flow li:last-child { border-bottom: 1px solid var(--line); }
+.flow li::before {
+  content: counter(step, decimal-leading-zero);
+  font-family: var(--font-mono);
+  font-weight: 600;
+  color: var(--hivis);
+  font-size: 0.9rem;
+  padding-top: 2px;
+}
+.flow .where { font-family: var(--font-mono); font-size: 0.74rem; color: var(--muted); display: block; }
+.verdict-fail { color: var(--fail); font-weight: 600; }
+.verdict-ok { color: var(--ok); font-weight: 600; }
+
+/* ===== 표 ===== */
+.table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
+table { border-collapse: collapse; width: 100%; font-size: 0.86rem; min-width: 640px; }
+th, td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--line); vertical-align: top; }
+tr:last-child td { border-bottom: none; }
+th { font-size: 0.74rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); font-weight: 600; background: var(--dock); }
+td.mono, td code { white-space: nowrap; }
+
+/* ===== 구성 요소 카드 ===== */
+.parts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.part {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+.part-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 12px; }
+.part-head .mono { color: var(--muted); font-size: 0.78rem; }
+.part ul { margin: 0; padding-left: 1.1em; font-size: 0.88rem; display: flex; flex-direction: column; gap: 3px; }
+@media (max-width: 720px) { .parts { grid-template-columns: minmax(0, 1fr); } }
+
+/* ===== 코드 ===== */
+pre {
+  margin: 0;
+  background: var(--code-bg);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 16px 18px;
+  overflow-x: auto;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  line-height: 1.6;
+  color: var(--ink);
+}
+pre .c { color: var(--muted); }
+pre .k { color: var(--hivis); }
+.two { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: 14px; align-items: start; }
+@media (max-width: 820px) { .two { grid-template-columns: minmax(0, 1fr); } }
+.note-list { margin: 0; padding-left: 1.1em; display: flex; flex-direction: column; gap: 6px; max-width: 72ch; }
+
+footer { color: var(--muted); font-size: 0.8rem; border-top: 1px solid var(--line); padding-top: 16px; }
+.lede a, .note-list a, p a { color: var(--hivis); }
+</style>
+
+<div class="page">
+
+<header>
+  <div class="tape" aria-hidden="true"></div>
+  <h1>개발·시험·배포 협업 방법</h1>
+  <p class="lede">누가 어디를 고치는지, 집 밖에서 실제 Pi로 사진을 보내 시험하는 방법, PR·CI를 거쳐 Pi에 올리는 방법을 모았다. 시스템 구조는 <a href="architecture.html">architecture.html</a>에 있고, 규칙의 원본은 저장소 루트의 <code>CLAUDE.md</code>·<code>README.md</code>다.</p>
+</header>
+
+<!-- ============ 담당 ============ -->
+<section class="block" aria-labelledby="h-owner">
+  <div class="eyebrow">Ownership</div>
+  <h2 id="h-owner">담당과 고칠 수 있는 범위</h2>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>폴더</th><th>하는 일</th><th>담당</th></tr></thead>
+      <tbody>
+        <tr><td><code>esp32/</code></td><td>Edge Impulse 모델, 카메라 설정, 쿨다운, HTTP POST</td><td>대희</td></tr>
+        <tr><td><code>pi/docker-compose*.yml</code>, <code>pi/deploy.sh</code></td><td>Pi 환경, 서비스 구성, 배포, 메모리 측정</td><td>명수</td></tr>
+        <tr><td><code>pi/gateway/</code></td><td>사진 수신, 대기 줄, inference → uploader 호출 순서</td><td>명수</td></tr>
+        <tr><td><code>.github/</code></td><td>CI, deploy-pi</td><td>명수</td></tr>
+        <tr><td><code>pi/inference/</code>, <code>pi/models/</code></td><td>ONNX 변환·검증, 추론 서버</td><td>우진</td></tr>
+        <tr><td><code>pi/uploader/</code>, <code>cloud/supabase/</code></td><td>Supabase 저장, 버퍼·재시도, 테이블·버킷·RLS</td><td>도은</td></tr>
+        <tr><td><code>web/</code></td><td>위반 기록 웹 페이지</td><td>진아</td></tr>
+        <tr><td><code>docs/contracts/</code></td><td>파트 사이 데이터 형식</td><td>경계 양쪽 담당</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <ul class="note-list">
+    <li>고칠 수 있는 곳은 내 이름이 적힌 폴더와, 그와 같은 이름의 <code>tests/</code> 폴더뿐이다. 나머지는 읽기만 한다. 다른 폴더를 고쳐야 풀리는 문제면 담당자에게 무엇을 왜 바꿔야 하는지 알린다.</li>
+    <li>공용 파일(<code>README.md</code>, <code>CLAUDE.md</code>, <code>docs/</code>, <code>pytest.ini</code>, <code>tests/conftest.py</code>, <code>.env.example</code>)은 관련 담당자와 상의한 뒤 PR로 바꾼다.</li>
+    <li>라즈베리 파이 실물은 명수가 가지고 있다. 배포·재빌드는 누구나 <code>deploy-pi</code>로 한다. 설치, 모델 파일 교체, <code>.env</code> 변경, 실측은 명수에게 요청한다.</li>
+    <li>담당이 바뀌면 README의 "폴더별 담당" 표와 <code>.github/CODEOWNERS</code>만 고친다. 폴더 구조와 파트 이름은 바꾸지 않는다.</li>
+  </ul>
+</section>
+
+<!-- ============ Funnel ============ -->
+<section class="block" aria-labelledby="h-funnel">
+  <div class="eyebrow">Remote test</div>
+  <h2 id="h-funnel">집 밖에서 실제 Pi로 보내기 (Tailscale Funnel)</h2>
+  <p>Pi는 명수 집에 한 대뿐이다. 다른 곳의 ESP32나 PC에서도 실제 처리 흐름(gateway → inference → uploader → Supabase)으로 사진을 보낼 수 있도록, gateway(8001)만 Tailscale Funnel의 HTTPS 주소로 인터넷에 열어 두었다. SSH 같은 다른 포트는 열지 않는다.</p>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th></th><th>같은 네트워크 (명수 집)</th><th>인터넷 (다른 곳)</th></tr></thead>
+      <tbody>
+        <tr><td>주소</td><td><code>http://&lt;Pi IP&gt;:8001/frame</code></td><td><code>https://&lt;Pi 이름&gt;.&lt;tailnet&gt;.ts.net/frame</code></td></tr>
+        <tr><td>토큰</td><td>없음</td><td><code>X-Device-Token</code> 필수 (팀 공용)</td></tr>
+        <tr><td>ESP32 코드</td><td><code>HTTPClient.begin(url)</code></td><td><code>WiFiClientSecure</code> + <code>HTTPClient.begin(client, url)</code></td></tr>
+        <tr><td>토큰이 틀리면</td><td>-</td><td><code>401</code>. Pi <code>.env</code>의 <code>GATEWAY_TOKEN</code>이 비어 있을 때도 모두 <code>401</code></td></tr>
+      </tbody>
+    </table>
+  </div>
+<pre><span class="c"># PC에서 시험 사진 한 장 (장치 ID는 test-로 시작해 나중에 골라 지운다)</span>
+curl -H "X-Device-Id: test-&lt;이름&gt;" -H "X-Device-Token: &lt;토큰&gt;" -H "Content-Type: image/jpeg" \
+     --data-binary @사진.jpg https://&lt;Pi 이름&gt;.&lt;tailnet&gt;.ts.net/frame
+<span class="c"># → 202 {"status": "queued", "queue": 1, "frame": "ab12cd34"}</span>
+
+<span class="c"># 판정 결과 보기 (최근 50건, gateway를 다시 시작하면 비워진다)</span>
+curl "https://&lt;Pi 이름&gt;.&lt;tailnet&gt;.ts.net/recent?device_id=test-&lt;이름&gt;"</pre>
+  <ul class="note-list">
+    <li>실제 주소와 엔드포인트별 응답은 <a href="api-manual.html">api-manual.html</a>, 요청 형식은 <a href="contracts/frame.md">contracts/frame.md</a>에 있다.</li>
+    <li>gateway는 요청에 프록시가 붙이는 헤더(<code>X-Forwarded-For</code>, <code>Forwarded</code>, <code>Cf-Connecting-Ip</code>, <code>Tailscale-Funnel-Request</code>)가 있으면 인터넷에서 온 요청으로 보고 토큰을 검사한다.</li>
+    <li>토큰은 Pi의 <code>pi/.env</code>와 각자의 <code>config.h</code>에만 둔다. 커밋하지 않고, 팀원에게는 개인 메시지로 전하며, 로그에도 찍지 않는다.</li>
+    <li>장치 ID 규칙: 각자의 ESP32는 <code>cam-&lt;이름&gt;</code>, curl·pytest 같은 시험은 <code>test-&lt;아무거나&gt;</code>를 쓴다. 시험 기록은 <code>test-</code>로 골라 지울 수 있다.</li>
+    <li>검토했지만 쓰지 않은 방법: 공유기 포트포워딩, Cloudflare Tunnel(도메인 필요), ngrok 무료(월 1GB 제한), 팀원 SSH. 이유는 <a href="decisions.md">decisions.md</a>에 있다.</li>
+  </ul>
+</section>
+
+<!-- ============ deploy-pi ============ -->
+<section class="block" aria-labelledby="h-deploy">
+  <div class="eyebrow">Deploy</div>
+  <h2 id="h-deploy">내 브랜치를 실제 Pi에 올려 시험하기 (deploy-pi)</h2>
+  <ol class="flow">
+    <li><div><span class="where">GitHub</span>Actions → <code>deploy-pi</code> → Run workflow를 누르고 <code>ref</code>(올릴 브랜치, 기본 <code>dev</code>)와 <code>action</code>을 고른다. 저장소에 write 권한이 있는 팀원은 누구나 실행할 수 있다.</div></li>
+    <li><div><span class="where">deploy</span>Pi에 설치된 self-hosted runner(<code>rpi5</code>, 라벨 <code>pi</code>)가 그 브랜치를 받아 <code>docker compose up --build</code>를 실행하고, 컨테이너가 healthy가 될 때까지 기다린다. 시작 로그에 <code>commit=</code>이 찍힌다.</div></li>
+    <li><div><span class="where">시험 중</span>배포가 끝나면 <code>hold_minutes</code>(기본 30분) 동안 "시험 중"으로 표시되어 다른 사람의 <code>deploy</code>가 막힌다. 표시를 건 본인은 막히지 않으니 고쳐서 다시 올리면 된다.</div></li>
+    <li><div><span class="where">확인</span>실행의 마지막 단계 "상태·최근 로그"에서 지금 Pi에 올라간 커밋, 시험 중인 사람, <code>docker compose ps</code>, <code>/health</code>, 최근 로그 80줄을 본다. 바꾸지 않고 상태만 보려면 <code>status</code>를 고른다.</div></li>
+    <li><div><span class="where">release</span>시험이 끝나면 올린 사람이 <code>release</code>를 누르고 <code>dev</code>를 다시 올려 둔다. 누르지 않아도 시간이 지나면 표시는 저절로 풀린다.</div></li>
+  </ol>
+  <ul class="note-list">
+    <li>막히면 기다리지 않고 바로 실패하며, 이유는 실행 화면 맨 위 Summary에 남는다.
+      예: <code>MOTNV 님이 feature/pi/x (abc1234)를 시험 중이라 멈춤 (15:05까지)</code>. 이럴 때는 그 사람에게 확인한 뒤 <code>release</code>하고 다시 <code>deploy</code>한다.</li>
+    <li>모델 파일(<code>pi/models/*.onnx</code>)과 <code>.env</code>는 git 밖에 있어서 배포로 바뀌지 않는다. 바꿀 일이 있으면 명수에게 요청한다.</li>
+    <li>public 저장소라 실행 로그는 누구나 볼 수 있다. 비밀값을 로그에 찍지 않는다.</li>
+    <li>명수가 Pi에서 직접 작업할 때도 같은 규칙을 쓴다(<code>pi-deploy status · hold · deploy · release</code>). 다른 사람이 시험 중이면 직접 실행하는 <code>docker compose up</code> 등도 막힌다. 설치 방법과 자세한 내용은 <code>pi/README.md</code>의 "Pi 배포"에 있다.</li>
+  </ul>
+</section>
+
+<!-- ============ 추적 ============ -->
+<section class="block" aria-labelledby="h-trace">
+  <div class="eyebrow">Debug</div>
+  <h2 id="h-trace">사진 한 장 따라가기</h2>
+  <ol class="flow">
+    <li><div><span class="where">ESP32 / curl</span>202 응답 본문의 <code>frame</code>(사진 번호, 8자리 hex)을 확인한다. ESP32는 응답 본문을 시리얼에 그대로 찍는다.</div></li>
+    <li><div><span class="where">gateway</span><code>/recent?device_id=…</code>에서 <code>verdict</code>, <code>upload</code>와 구간별 시간(<code>wait_ms</code>·<code>infer_ms</code>·<code>upload_ms</code>·<code>total_ms</code>)을 본다.</div></li>
+    <li><div><span class="where">Pi 로그</span><code>docker compose logs --no-color | grep frame=&lt;번호&gt;</code>로 찾는다. gateway의 "처리 끝" 줄과 uploader의 "저장 성공 … log_id=" 줄이 같은 번호로 이어진다. deploy-pi의 <code>status</code>로도 최근 로그를 볼 수 있다.</div></li>
+    <li><div><span class="where">Supabase</span>uploader 로그의 <code>log_id</code>로 <code>safety_logs</code> 행을 찾는다. 웹에 위반이 안 뜰 때 확인하는 순서는 <code>cloud/README.md</code>의 "로그 보는 곳"에 있다.</div></li>
+  </ol>
+  <ul class="note-list">
+    <li>로그 한 줄 형식은 <code>시각 레벨 로거 파일:줄 메시지 key=value…</code>이다. 로거 이름은 <code>pi.gateway</code>·<code>pi.inference</code>·<code>pi.uploader</code>이고, 시각은 한국 시각으로 찍힌다.</li>
+    <li>자세히 볼 때만 <code>LOG_LEVEL=DEBUG</code>로 올린다. 로그는 서비스당 10MB 파일 3개까지만 남는다.</li>
+  </ul>
+</section>
+
+<!-- ============ 브랜치·PR ============ -->
+<section class="block" aria-labelledby="h-branch">
+  <div class="eyebrow">Branch · PR</div>
+  <h2 id="h-branch">브랜치에서 병합까지</h2>
+  <ol class="flow">
+    <li><div><span class="where">브랜치</span><code>dev</code>를 최신으로 받고 거기서 <code>&lt;태그&gt;/&lt;파트&gt;/&lt;기능&gt;</code> 브랜치를 만든다. 태그는 <code>feature</code> <code>fix</code> <code>docs</code> <code>refactor</code> <code>chore</code> 중 하나다. 파트는 고치는 폴더의 최상위 이름(<code>esp32</code> <code>pi</code> <code>cloud</code> <code>web</code>)이고, 여러 파트에 걸치면 <code>common</code>을 쓴다. 예를 들어 <code>pi/uploader/</code>를 고치면 담당이 cloud여도 <code>feature/pi/…</code>다.</div></li>
+    <li><div><span class="where">커밋</span>메시지는 <code>&lt;타입&gt;(&lt;파트&gt;): &lt;요약&gt;</code> 형식이고, 타입은 <code>feat</code> <code>fix</code> <code>docs</code> <code>refactor</code> <code>chore</code> 중 하나다. 계약을 바꾸는 커밋에는 <code>[contract]</code>를 붙인다. 예: <code>feat(pi): gateway 대기 줄 추가</code></div></li>
+    <li><div><span class="where">PR</span><code>dev</code>로 올린다. <code>main</code>(최종본)과 <code>dev</code>(통합)에는 직접 push하지 않는다.</div></li>
+    <li><div><span class="where">CI</span><code>ci-ok</code>가 초록불이어야 병합할 수 있다. 실패하면 테스트를 지우거나 건너뛰게 만들지 말고 원인을 고친다.</div></li>
+    <li><div><span class="where">병합</span>병합 방식은 Create a merge commit만 쓴다. 앞 PR의 CI가 끝난 뒤 하나씩 병합한다. GitHub 쪽 브랜치는 자동으로 지워지고, 내 PC의 브랜치는 <code>git switch dev &amp;&amp; git pull --prune</code> 뒤 <code>git branch -d &lt;브랜치&gt;</code>로 지운다.</div></li>
+  </ol>
+  <ul class="note-list">
+    <li>실수로 로컬 <code>dev</code>에 커밋했다면 <code>git switch -c &lt;작업 브랜치&gt;</code>로 옮긴 뒤 <code>git branch -f dev origin/dev</code>로 되돌린다.</li>
+    <li><code>git pull</code> 뒤에는 <code>docker compose up --build</code>로 다시 빌드한다. <code>--build</code>가 없으면 예전 이미지가 그대로 돈다.</li>
+  </ul>
+</section>
+
+<!-- ============ CI ============ -->
+<section class="block" aria-labelledby="h-ci">
+  <div class="eyebrow">CI</div>
+  <h2 id="h-ci">CI: 바뀐 파트만, PR에서만</h2>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>job</th><th>언제 도는가</th><th>하는 일</th></tr></thead>
+      <tbody>
+        <tr><td><code>lint</code></td><td>항상</td><td>ruff (수 초)</td></tr>
+        <tr><td><code>pi</code></td><td><code>pi/</code>·<code>tests/pi/</code>·<code>tests/e2e/</code></td><td>arm64 러너에서 compose 빌드(캐시) → healthcheck 통과까지 기동 → <code>pytest tests/pi tests/e2e tests/contracts</code>. ONNX는 Release <code>model-v1</code>에서 받아 캐시한다</td></tr>
+        <tr><td><code>esp32</code></td><td><code>esp32/</code>·<code>tests/esp32/</code></td><td>펌웨어 컴파일(코어·빌드 캐시) → <code>pytest tests/esp32</code></td></tr>
+        <tr><td><code>cloud</code></td><td><code>cloud/</code>·<code>tests/cloud/</code></td><td>로컬 Supabase에 <code>schema.sql</code> 적용 → <code>pytest tests/cloud</code></td></tr>
+        <tr><td><code>web</code></td><td><code>web/</code>·<code>tests/web/</code></td><td><code>pytest tests/web</code></td></tr>
+        <tr><td><code>ci-ok</code></td><td>항상 (마지막)</td><td>위 job이 모두 통과했거나 건너뛰었으면 초록. 브랜치 보호에 걸린 유일한 필수 검사다</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <ul class="note-list">
+    <li><code>docs/contracts/</code>·<code>tests/contracts/</code>가 바뀌거나 <code>dev → main</code> PR이면 모든 job이 돈다.</li>
+    <li>트리거는 <code>pull_request</code>뿐이고, 같은 PR에 새 커밋이 오면 이전 실행을 취소한다. 지난 프로젝트에서 CI 시간이 2분에서 8분으로 늘었던 일을 피하려는 설정이다.</li>
+    <li>CI를 느리게 만드는 변경(무거운 빌드·다운로드 추가)은 캐시 설정을 같은 PR에 넣는다.</li>
+    <li>개발 환경 값(ESP32 FQBN·코어 버전, Python 이미지)을 바꾸면 <code>ci.yml</code>과 <code>CLAUDE.md</code>의 표를 같은 PR에서 함께 고치고, PR 설명에 "환경 갱신 필요"를 적는다.</li>
+  </ul>
+</section>
+
+<!-- ============ 테스트 ============ -->
+<section class="block" aria-labelledby="h-test">
+  <div class="eyebrow">Tests</div>
+  <h2 id="h-test">테스트 쓰고 내 PC에서 돌리기</h2>
+  <div class="two">
+<pre><span class="c"># 저장소 루트에서. 내부 포트(8003·8004)도 열어 주는 CI용 설정을 겹친다</span>
+cd pi
+docker compose -f docker-compose.yml -f docker-compose.ci.yml up -d --build --wait
+cd ..
+pip install -r tests/requirements.txt
+pytest tests/pi tests/e2e -m "not pi and not supabase"</pre>
+    <ul class="note-list">
+      <li><code>tests/&lt;파트&gt;/test_*.py</code>로 넣으면 CI 파일을 고치지 않아도 CI에서 돈다.</li>
+      <li>서비스 코드를 import하지 말고 HTTP로 부른다. 주소는 <code>conftest.py</code>의 fixture(<code>gateway_url</code> 등)를 쓴다.</li>
+      <li>판정은 문자열이 아니라 응답 코드, JSON 필드, 출처로 한다.</li>
+      <li>마커: 모델이 필요하면 <code>model</code>, Supabase가 필요하면 <code>supabase</code>, Pi에서만 의미 있는 측정이면 <code>pi</code>를 붙인다.</li>
+      <li>시험이 끝나면 <code>pi/buffer/</code>에 쌓인 시험 기록을 지운다. 그대로 두면 나중에 <code>.env</code>를 넣었을 때 Supabase로 올라간다.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ============ 계약 ============ -->
+<section class="block" aria-labelledby="h-contract">
+  <div class="eyebrow">Contracts</div>
+  <h2 id="h-contract">파트 사이 형식 바꾸기</h2>
+  <ol class="flow">
+    <li><div><span class="where">먼저 문서</span>구현하기 전에 <code>docs/contracts/</code>에 형식을 적는다. 보내는 쪽과 받는 쪽 담당자가 둘 다 확인하면 문서 상태를 "합의"로 바꾼다.</div></li>
+    <li><div><span class="where">커밋</span>계약을 바꾸는 커밋 메시지에는 <code>[contract]</code>를 붙인다. 이 경로가 바뀌면 CI가 모든 파트를 검사한다.</div></li>
+    <li><div><span class="where">배포 순서</span>받는 쪽부터 올린다: Supabase 스키마 → pi → web → esp32. 새 필드는 선택으로 두어, 받는 쪽이 먼저 올라가도 모르는 필드를 무시할 수 있게 한다.</div></li>
+    <li><div><span class="where">상대가 없을 때</span>가짜로 대신한다. ESP32 대신 <code>curl</code>로 사진 POST, Supabase 대신 uploader 버퍼, Supabase 데이터가 없으면 웹의 데모 모드를 쓴다.</div></li>
+  </ol>
+</section>
+
+<!-- ============ 기록 ============ -->
+<section class="block" aria-labelledby="h-record">
+  <div class="eyebrow">Records</div>
+  <h2 id="h-record">커밋하지 않는 것, 남겨야 하는 것</h2>
+  <div class="parts">
+    <div class="part">
+      <div class="part-head"><h3>커밋하지 않는다</h3></div>
+      <ul>
+        <li><code>.env</code>, <code>esp32/firmware/safety_cam/config.h</code> (Wi-Fi 비밀번호, 토큰, Supabase key, IP)</li>
+        <li>모델 가중치 <code>*.onnx</code> <code>*.pt</code>. ONNX는 Release <code>model-v1</code>에 올리고 <code>pi/models/README.md</code>에 SHA256을 적는다</li>
+        <li>영상 <code>*.mp4</code> <code>*.mov</code>, <code>pi/buffer/</code>, 측정 로그 <code>*.log</code></li>
+        <li>예외: Edge Impulse Arduino 라이브러리 zip은 <code>esp32/model/</code>에 커밋한다 (CI 컴파일용)</li>
+        <li>Supabase service key는 Pi의 <code>.env</code>에만 둔다. 웹에는 anon key만 쓴다</li>
+      </ul>
+    </div>
+    <div class="part">
+      <div class="part-head"><h3>남긴다</h3></div>
+      <ul>
+        <li>측정한 숫자(추론 시간, 메모리, 감지율)는 어느 커밋·모델 SHA256에서 쟀는지 함께 적는다. PC·QEMU에서 잰 값을 Pi 값으로 쓰지 않는다</li>
+        <li>펌웨어는 시리얼 첫 줄에 <code>FW_VERSION</code>을 찍고, 펌웨어를 바꿀 때마다 올린다</li>
+        <li>되돌리기 어려운 결정(모델 교체, 컨테이너 추가·삭제, 계약 변경)은 선택지를 2개 이상 비교한 뒤 정하고, <a href="decisions.md">decisions.md</a>에 날짜·결정·이유·버린 선택지를 남긴다</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<footer>규칙이 바뀌면 원본(<code>CLAUDE.md</code>·<code>README.md</code>·<code>pi/README.md</code>)과 이 문서를 같은 PR에서 함께 고친다.</footer>
+
+</div>
