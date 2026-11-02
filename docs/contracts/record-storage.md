@@ -22,10 +22,11 @@ gateway는 inference 판정이 fail일 때만 uploader에 판정 결과와 사�
 | `has_vest` | boolean | 예 | 조끼 착용 여부 |
 | `confidence` | number \| null | 아니오 | 판정 신뢰도 0~1 |
 | `detected_at` | string | 아니오 | gateway가 사진을 받은 시각, ISO 8601 (시간대 포함). 없으면 uploader가 받은 시각 |
+| `frame_id` | string | 아니오 | gateway가 붙인 사진 번호 (8자리 hex). uploader는 로그에만 쓰고 `safety_logs`에는 넣지 않는다. 형식이 틀려도 기록은 받는다 |
 
 `has_helmet`과 `has_vest` 중 하나 이상은 `false`여야 한다 (위반만 저장).
 
-`has_helmet` `has_vest` `confidence`는 [inference.md](inference.md)의 응답 필드와 같다. gateway는 inference 응답 JSON에 `device_id`(필요하면 `detected_at`)를 더해 그대로 `result`로 넘기면 된다. 위 표에 없는 필드(`verdict`, `persons`, `detections`, `infer_ms` 등)는 uploader가 무시한다.
+`has_helmet` `has_vest` `confidence`는 [inference.md](inference.md)의 응답 필드와 같다. gateway는 inference 응답 JSON에 `device_id`(필요하면 `detected_at`·`frame_id`)를 더해 그대로 `result`로 넘기면 된다. 위 표에 없는 필드(`verdict`, `persons`, `detections`, `infer_ms` 등)는 uploader가 무시한다.
 
 ```bash
 curl -F 'result={"device_id":"esp32-01","has_helmet":false,"has_vest":true,"confidence":0.82}' \

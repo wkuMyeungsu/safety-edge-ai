@@ -52,7 +52,7 @@ docker stats                   # 메모리 사용량
 docker compose down            # 종료
 ```
 
-- 지금 `pi/*`의 서버는 `/health`만 답하는 뼈대다. 담당자가 자기 폴더의 `main.py`·`Dockerfile`·`requirements.txt`를 채운다.
+- 모델 파일(`pi/models/ppe_yolov8.onnx`)은 git에 없다. 없으면 inference가 `/health`에 `model_loaded: false`로 뜨고 판정은 `503`이다. 받는 법은 `pi/models/README.md`.
 - 외부에 열리는 포트는 gateway의 `8001`뿐이다. 컨테이너끼리는 서비스 이름으로 부른다 (`http://inference:8003`).
 - 실제 Pi에 올리기는 Actions → `deploy-pi` → Run workflow (팀원 누구나, `pi/README.md` "Pi 배포").
 

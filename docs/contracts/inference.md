@@ -1,6 +1,6 @@
 # 추론: pi gateway ⇄ pi inference
 
-- 상태: **초안** (우진 제안). 명수가 확인하면 "합의"로 바꾼다.
+- 상태: **합의** (우진 제안, 명수 확인 2026-11-02). 제한 시간은 Pi 5 실측 뒤 다시 본다.
 - 확인할 담당: 명수 (gateway, 부르는 쪽), 우진 (inference, 답하는 쪽)
 
 ## 요청
@@ -8,9 +8,12 @@
 ```
 POST http://inference:8003/predict
 Content-Type: image/jpeg
+X-Frame-Id: ab12cd34
 
 <ESP32가 보낸 JPEG 바이트 그대로>
 ```
+
+- `X-Frame-Id`는 선택. gateway가 붙인 사진 번호(8자리 hex)로, inference는 판정에 쓰지 않고 로그(`frame=`)에만 쓴다. 없거나 형식이 틀려도 판정은 그대로 한다.
 
 - 본문은 JPEG 바이트 그대로 보낸다 (multipart 아님). gateway가 ESP32에서 받은 것을 다시 인코딩하지 않는다.
 - 최대 2MB. `device_id`는 inference가 쓰지 않으므로 보내지 않는다 (gateway가 들고 있다가 uploader에 넘긴다).
@@ -79,7 +82,7 @@ Content-Type: image/jpeg
 | `IOU_THRES` | `0.45` | 겹친 상자 하나로 합치는 기준 (NMS) |
 | `ORT_THREADS` | `3` | onnxruntime 스레드 수 (Pi 5는 4코어, gateway·uploader 몫 1코어) |
 
-## 정할 것 (명수)
+## 정한 것 (명수)
 
-- [ ] `no_person`을 pass처럼 로그만 남기는 것으로 괜찮은지
-- [ ] gateway의 inference 호출 시간 제한 (Pi 5 실측 추론 시간을 보고 정한다)
+- [x] `no_person`은 pass처럼 로그와 gateway `/recent`에만 남기고 uploader로 넘기지 않는다.
+- [x] gateway의 inference 호출 제한 시간은 **10초** (`INFERENCE_TIMEOUT`, 잠정). 넘으면 그 사진은 `verdict: error`로 버린다. Pi 5 실측 추론 시간이 나오면 다시 정한다.

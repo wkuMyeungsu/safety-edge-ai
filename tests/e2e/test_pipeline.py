@@ -38,6 +38,7 @@ def test_violation_goes_to_uploader(gateway_url, name):
     assert entry["has_helmet"] == want["has_helmet"]
     assert entry["has_vest"] == want["has_vest"]
     assert entry["upload"] in ("stored", "buffered")
+    assert entry["upload_ms"] >= 0
 
 
 @pytest.mark.model
@@ -45,3 +46,4 @@ def test_pass_is_not_uploaded(gateway_url):
     entry = send_and_wait(gateway_url, (IMAGES / "test_11.jpg").read_bytes())
     assert entry["verdict"] == "pass"
     assert entry["upload"] is None
+    assert "upload_ms" not in entry
