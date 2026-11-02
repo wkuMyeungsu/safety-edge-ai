@@ -355,7 +355,7 @@ footer { color: var(--muted); font-size: 0.8rem; border-top: 1px solid var(--lin
           <div class="device-head"><h3>ESP32-S3</h3><span class="sub">초소형 엣지 카메라 · 펌웨어</span></div>
           <ol class="chain">
             <li>카메라 촬영</li>
-            <li>64×64로 축소</li>
+            <li>48×48로 축소</li>
             <li>Edge Impulse 사람 감지 <span class="model-tag">모델 1</span></li>
             <li>2프레임 연속 사람 + 쿨다운 5초 경과<br><span class="branch">아니면 대기</span></li>
             <li>축소 전 JPEG (지금 QVGA 320×240) HTTP POST</li>
@@ -456,7 +456,7 @@ footer { color: var(--muted); font-size: 0.8rem; border-top: 1px solid var(--lin
   <div class="eyebrow">Sequence</div>
   <h2 id="h-flow">사진 한 장의 처리 순서</h2>
   <ol class="flow">
-    <li><div><span class="where">ESP32-S3</span>카메라 프레임(QVGA 320×240)을 64×64로 줄여 Edge Impulse 사람 감지 모델(FOMO)을 돌린다. 사람이 없으면 아무것도 보내지 않는다.</div></li>
+    <li><div><span class="where">ESP32-S3</span>카메라 프레임(QVGA 320×240)을 48×48로 줄여 Edge Impulse 사람 감지 모델(FOMO)을 돌린다. 사람이 없으면 아무것도 보내지 않는다.</div></li>
     <li><div><span class="where">ESP32-S3</span>2프레임 연속 사람이 감지되고 마지막 전송 뒤 5초가 지났으면, 축소 전 원본 JPEG를 <code>POST /frame</code>으로 gateway에 보낸다. 감지 점수·사람 수는 <code>X-Person-Score</code>·<code>X-Person-Count</code> 헤더로 함께 보낸다.</div></li>
     <li><div><span class="where">gateway</span><code>X-Device-Id</code>와 JPEG 형식·크기(2MB 이하)를 검사해 틀리면 <code>400</code>·<code>413</code>을 돌려준다. 통과하면 사진 번호 <code>frame</code>(8자리 hex)과 받은 시각 <code>detected_at</code>을 붙여 대기 줄에 넣고, 판정을 기다리지 않고 바로 <code>202</code>(본문에 <code>frame</code>)를 돌려준다. 대기 줄(4장)이 차 있으면 <code>503</code>을 돌려주고, ESP32는 그 사진을 다시 보내지 않는다.</div></li>
     <li><div><span class="where">gateway → inference</span>작업자 1개가 대기 줄에서 한 장씩 꺼내 <code>POST /predict</code>로 보낸다 (헤더 <code>X-Frame-Id</code>, 제한 시간 10초). inference는 YOLOv8 PPE ONNX 모델로 사람·안전모·조끼를 찾아 판정 결과 JSON을 돌려준다.</div></li>
