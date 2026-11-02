@@ -42,6 +42,7 @@ logging.basicConfig(level=os.environ.get("LOG_LEVEL", "INFO"),
 logging.getLogger("httpx").setLevel(logging.WARNING)
 logging.getLogger("httpcore").setLevel(logging.WARNING)
 log = logging.getLogger("pi.uploader")
+retry_log = logging.getLogger("pi.uploader.retry")
 
 # 요청 처리와 재시도 작업이 같은 기록을 동시에 보내지 않게 한다
 send_lock = asyncio.Lock()
@@ -141,15 +142,27 @@ async def retry_loop(client: httpx.AsyncClient) -> None:
         await asyncio.sleep(RETRY_INTERVAL)
         if not BUFFER_DIR.exists():
             continue
+        tried = sent = 0
+        error = None
         for p in sorted(BUFFER_DIR.glob("*.json"), key=lambda p: p.stat().st_mtime):
-            _, error = await try_send(client, p.stem)
+            tried += 1
+            log_id, error = await try_send(client, p.stem)
+            sent += log_id is not None
             if error:
-                log.warning("재전송 실패, 버퍼에 둠 rid=%s error=%s", p.stem, error)
                 break  # 아직 연결이 안 되면 다음 주기에 다시
+        # rid마다 찍지 않고 한 바퀴에 한 줄 (끊겨 있으면 30초마다 같은 줄이 쌓이지 않게)
+        if error:
+            retry_log.warning("재전송 실패, 다음에 다시 tried=%d sent=%d pending=%d error=%s",
+                              tried, sent, buffered_count(), error)
+        elif sent:
+            retry_log.info("재전송 sent=%d pending=%d", sent, buffered_count())
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    failed = len(list((BUFFER_DIR / "failed").glob("*.json"))) if (BUFFER_DIR / "failed").exists() else 0
+    log.info("시작 commit=%s supabase=%s pending=%d failed=%d retry_s=%g",
+             os.environ.get("COMMIT") or "unknown", configured(), buffered_count(), failed, RETRY_INTERVAL)
     if not configured():
         log.warning("SUPABASE_URL·SUPABASE_SERVICE_KEY 없음: 받은 기록은 버퍼에만 쌓는다")
         app.state.client = None
