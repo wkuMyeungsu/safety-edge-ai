@@ -5,7 +5,6 @@
 모델은 서버 시작 때 한 번만 불러온다. uvicorn worker는 1개 (Pi 5 4GB).
 """
 
-import ast
 import logging
 import os
 import threading
@@ -21,7 +20,8 @@ from fastapi import FastAPI, Request
 from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import JSONResponse
 
-from detector import categorize, decode, judge, preprocess
+from detector import decode, judge, preprocess
+from model_spec import inspect_session
 
 SERVICE = os.environ.get("SERVICE_NAME", "inference")
 PORT = int(os.environ.get("PORT", "8003"))
@@ -36,15 +36,6 @@ model = {"session": None, "input": None, "size": None, "classes": [], "categorie
 run_lock = threading.Lock()  # 한 번에 한 장씩 (Pi CPU를 나눠 쓰지 않게)
 
 
-def class_names(session: ort.InferenceSession) -> list[str]:
-    """ultralytics가 ONNX에 넣어 둔 클래스 이름 ({0: 'Hardhat', ...})을 읽는다."""
-    raw = session.get_modelmeta().custom_metadata_map.get("names")
-    if not raw:
-        return []
-    names = ast.literal_eval(raw)
-    return [names[i] for i in sorted(names)] if isinstance(names, dict) else list(names)
-
-
 def load_model() -> None:
     if not MODEL_PATH.is_file():
         model["error"] = f"모델 파일 없음: {MODEL_PATH} (받는 법은 pi/models/README.md)"
@@ -56,17 +47,10 @@ def load_model() -> None:
         options.inter_op_num_threads = 1
         options.graph_optimization_level = ort.GraphOptimizationLevel.ORT_ENABLE_ALL
         session = ort.InferenceSession(str(MODEL_PATH), options, providers=["CPUExecutionProvider"])
-        inp = session.get_inputs()[0]
-        classes = class_names(session)
-        categories = {classes[i]: c for i, c in categorize(classes).items()}
-        found = set(categories.values())
-        if not ({"helmet", "no_helmet"} & found and {"vest", "no_vest"} & found):
-            model["error"] = f"안전모·조끼를 판정할 수 없는 모델: 클래스 {classes}"
-            log.error(model["error"])
-            return
-        model.update(session=session, input=inp.name, size=int(inp.shape[-1]) if isinstance(inp.shape[-1], int) else 640,
+        input_name, size, classes, categories = inspect_session(session)
+        model.update(session=session, input=input_name, size=size,
                      classes=classes, categories=categories, error=None)
-        log.info("모델 불러옴: %s, 입력 %s %s, 판정에 쓰는 클래스 %s", MODEL_PATH.name, inp.name, inp.shape, categories)
+        log.info("모델 불러옴: %s, 입력 %s [1, 3, %d, %d], 판정 클래스 %s", MODEL_PATH.name, input_name, size, size, categories)
     except Exception as e:  # 깨진 파일 등: 서버는 살아 있고 /predict만 503
         model["error"] = f"모델을 불러오지 못함: {e.__class__.__name__}: {e}"
         log.error(model["error"])
