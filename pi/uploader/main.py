@@ -17,11 +17,13 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 import httpx
+import uvicorn
 from fastapi import FastAPI, File, Form, Request, UploadFile
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
 SERVICE = os.environ.get("SERVICE_NAME", "uploader")
+PORT = int(os.environ.get("PORT", "8004"))
 BUFFER_DIR = Path(os.environ.get("BUFFER_DIR", "/buffer"))
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "").rstrip("/")
 SUPABASE_KEY = os.environ.get("SUPABASE_SERVICE_KEY", "")
@@ -33,8 +35,12 @@ SEND_TIMEOUT = 10  # 계약: Supabase 응답을 10초 넘게 기다리지 않는
 MAX_IMAGE_BYTES = 5 * 1024 * 1024  # violations 버킷 제한과 같다
 DEVICE_ID = re.compile(r"^[A-Za-z0-9_-]{1,64}$")
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s uploader %(levelname)s %(message)s")
-log = logging.getLogger("uploader")
+# 팀 로그 형식 (로그 설계 3절). 세 서비스가 같은 줄을 쓴다
+logging.basicConfig(level=os.environ.get("LOG_LEVEL", "INFO"),
+                    format="%(asctime)s %(levelname)-8s %(name)s %(filename)s:%(lineno)d %(message)s")
+logging.getLogger("httpx").setLevel(logging.WARNING)
+logging.getLogger("httpcore").setLevel(logging.WARNING)
+log = logging.getLogger("pi.uploader")
 
 # 요청 처리와 재시도 작업이 같은 기록을 동시에 보내지 않게 한다
 send_lock = asyncio.Lock()
@@ -151,7 +157,7 @@ class BadRecord(Exception):
 
 @app.exception_handler(BadRecord)
 async def bad_record(_: Request, e: BadRecord):
-    log.warning("거부 %d: %s", e.status, e.detail)
+    log.warning("요청 거부 code=%d detail=%s", e.status, e.detail)
     return JSONResponse({"status": "rejected", "detail": e.detail}, status_code=e.status)
 
 
@@ -252,3 +258,8 @@ async def records(request: Request, result: str = Form(...), image: UploadFile =
     if (BUFFER_DIR / f"{rid}.json").exists():
         log.info("버퍼에 둠, 나중에 다시 보냄 %s (%s)", rid, row["device_id"])
     return JSONResponse({"status": "buffered"}, status_code=202)
+
+
+if __name__ == "__main__":
+    # access 로그는 끈다 (healthcheck가 15초마다 찍힌다). 기동 메시지도 위 형식으로 찍힌다
+    uvicorn.run(app, host="0.0.0.0", port=PORT, workers=1, log_config=None, access_log=False)
