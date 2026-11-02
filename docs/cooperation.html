@@ -459,6 +459,14 @@ a { color: var(--hivis); }
       </tbody>
     </table>
   </div>
+  <h3>토큰이 필요한 이유</h3>
+  <ul class="note-list">
+    <li>Funnel 주소는 인터넷에 공개되어 있다. 주소만 알면 누구나 사진을 보낼 수 있다.</li>
+    <li>모르는 사람이 보낸 사진도 그대로 판정되고, 위반이면 Supabase와 웹에 가짜 기록이 남는다.</li>
+    <li>사진이 많이 들어오면 대기 줄이 차서 팀 ESP32의 사진이 <code>503</code>으로 거절된다.</li>
+    <li>그래서 외부에서 온 요청은 팀 토큰이 있을 때만 받는다.</li>
+    <li>같은 LAN은 Pi와 같은 네트워크에 있는 장치만 접근할 수 있어서 토큰을 검사하지 않는다.</li>
+  </ul>
   <p>PC에서 사진 한 장을 보내 보는 예시다.</p>
 <pre>curl -H "X-Device-Id: test-&lt;이름&gt;" -H "X-Device-Token: &lt;토큰&gt;" -H "Content-Type: image/jpeg" \
      --data-binary @사진.jpg https://&lt;Pi 이름&gt;.&lt;tailnet&gt;.ts.net/frame</pre>
