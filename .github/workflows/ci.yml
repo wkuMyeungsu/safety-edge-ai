@@ -4,6 +4,8 @@
 #   pi      : arm64 러너에서 compose 빌드(캐시) → 기동(healthcheck) → pytest tests/pi tests/e2e tests/contracts
 #   esp32   : 펌웨어 컴파일(코어·빌드 캐시) → pytest tests/esp32
 #   cloud   : 로컬 Supabase에 schema.sql 적용 → pytest tests/cloud
+#   web     : pytest tests/web
+#   (pi/uploader는 cloud 담당이지만 Pi 컨테이너라 pi job에서 검사한다)
 # 테스트는 tests/<파트>/에 test_*.py 를 넣으면 이 파일을 고치지 않아도 돈다 (tests/README.md).
 #
 # 지난 프로젝트 CI 병목(2분 → 8분)을 피하려고:
@@ -33,6 +35,7 @@ jobs:
       esp32: ${{ steps.f.outputs.esp32 == 'true' || steps.all.outputs.all == 'true' }}
       pi: ${{ steps.f.outputs.pi == 'true' || steps.all.outputs.all == 'true' }}
       cloud: ${{ steps.f.outputs.cloud == 'true' || steps.all.outputs.all == 'true' }}
+      web: ${{ steps.f.outputs.web == 'true' || steps.all.outputs.all == 'true' }}
     steps:
       - uses: actions/checkout@v4
       - id: f
@@ -51,6 +54,9 @@ jobs:
             cloud:
               - 'cloud/**'
               - 'tests/cloud/**'
+            web:
+              - 'web/**'
+              - 'tests/web/**'
             common:
               - 'docs/contracts/**'
               - 'tests/contracts/**'
@@ -199,9 +205,25 @@ jobs:
       - name: pytest (테스트가 0개면 통과)
         run: pytest tests/cloud -m "not pi" || [ $? -eq 5 ]
 
+  web:
+    needs: changes
+    if: needs.changes.outputs.web == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: tests/requirements.txt
+      - run: pip install -r tests/requirements.txt
+      - name: pytest (테스트가 0개면 통과)
+        run: pytest tests/web -m "not pi and not supabase" || [ $? -eq 5 ]
+
   ci-ok:
     if: always()
-    needs: [changes, lint, pi, esp32, cloud]
+    needs: [changes, lint, pi, esp32, cloud, web]
     runs-on: ubuntu-24.04
     steps:
       - name: 실패·취소된 job이 없으면 통과 (건너뛴 job은 통과로 본다)

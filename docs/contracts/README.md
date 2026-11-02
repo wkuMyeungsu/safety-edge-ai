@@ -8,3 +8,11 @@
 | 추론 | pi gateway ⇄ pi inference | 요청 형식, 판정 결과 JSON 필드 | 미정 |
 | 기록 저장 | pi gateway → pi uploader | 판정 결과 + 사진 전달 형식 | 미정 |
 | 저장 구조 | pi uploader → cloud | safety_logs 컬럼, 버킷 이름·경로 규칙 | `cloud/supabase/schema.sql` 초안 |
+| 조회 | cloud → web | 화면에 쓰는 컬럼, 사진 URL 형식, 실시간 구독 대상 | `cloud/supabase/schema.sql` 초안 |
+
+| 경계 | 확인할 담당 |
+|---|---|
+| 프레임 전송 | 대희, 명수 |
+| 추론 | 명수, 우진 |
+| 기록 저장 | 명수, 도은 |
+| 저장 구조 · 조회 | 도은, 진아 |

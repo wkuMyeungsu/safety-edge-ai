@@ -1,0 +1,25 @@
+# 마지막에 맞는 줄이 적용된다. 담당이 바뀌면 README "폴더별 담당" 표와 함께 고친다.
+*                         @wkuMyeungsu
+
+/esp32/                   @widee2018-code
+/tests/esp32/             @widee2018-code
+
+/pi/                      @wkuMyeungsu
+/tests/pi/                @wkuMyeungsu
+/tests/e2e/               @wkuMyeungsu
+/pi/inference/            @MOTNV
+/pi/models/               @MOTNV
+/tests/pi/inference/      @MOTNV
+/pi/uploader/             @ki543219
+/tests/pi/uploader/       @ki543219
+
+/cloud/                   @ki543219
+/tests/cloud/             @ki543219
+
+/web/                     @Binary-Ah
+/tests/web/               @Binary-Ah
+
+/.github/                 @wkuMyeungsu
+
+/docs/contracts/          @widee2018-code @wkuMyeungsu @MOTNV @ki543219 @Binary-Ah
+/tests/contracts/         @widee2018-code @wkuMyeungsu @MOTNV @ki543219 @Binary-Ah
