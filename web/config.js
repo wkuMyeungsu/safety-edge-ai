@@ -5,8 +5,8 @@
 //
 // 두 값이 비어 있으면 페이지는 가짜 데이터로 도는 데모 모드로 열린다.
 window.SAFETY_CONFIG = {
-  supabaseUrl: "",
-  supabaseAnonKey: "",
+  supabaseUrl: "https://sqrvaytfuytjchdmlbvu.supabase.co",
+  supabaseAnonKey: "sb_publishable_w4SdI632QqMAXnm4CtcGiQ_BdTUg1OM",
   table: "safety_logs",
   pageSize: 50,
 };
