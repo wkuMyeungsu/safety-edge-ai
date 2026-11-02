@@ -35,10 +35,18 @@ def predict(url, photo: bytes):
     return requests.post(f"{url}/predict", data=photo, headers={"Content-Type": "image/jpeg"}, timeout=30)
 
 
+@pytest.fixture
+def sample_bytes(image_bytes):
+    def load(name):
+        local = HERE / "images" / name
+        return local.read_bytes() if local.is_file() else image_bytes(name)
+    return load
+
+
 @pytest.mark.model
 @pytest.mark.parametrize("name", sorted(EXPECTED))
-def test_response_follows_contract(inference_url, image_bytes, name):
-    r = predict(inference_url, image_bytes(name))
+def test_response_follows_contract(inference_url, sample_bytes, name):
+    r = predict(inference_url, sample_bytes(name))
     assert r.status_code == 200, r.text
     body = r.json()
     jsonschema.validate(body, RESPONSE)
@@ -57,7 +65,9 @@ def test_response_follows_contract(inference_url, image_bytes, name):
 
 @pytest.mark.model
 @pytest.mark.parametrize("name", sorted(EXPECTED))
-def test_expected_verdict(inference_url, image_bytes, name):
-    body = predict(inference_url, image_bytes(name)).json()
+def test_expected_verdict(inference_url, sample_bytes, name):
+    r = predict(inference_url, sample_bytes(name))
+    assert r.status_code == 200, r.text
+    body = r.json()
     for field, want in EXPECTED[name].items():
         assert body[field] == want, f"{name}: {field}={body[field]!r}, 기대 {want!r} (검출: {body['detections']})"

@@ -40,4 +40,5 @@ cd .. && pytest tests/pi/inference
 
 - `test_predict_input.py`: 오류 코드 (모델 없이도 돈다)
 - `test_predict_contract.py`: 응답 형식과 사진별 판정 (`@pytest.mark.model`, `pi/models/ppe_yolov8.onnx`가 있을 때만)
-- 사진을 더하려면 `tests/fixtures/images/`에 넣고 `tests/pi/inference/expected.json`에 기대 판정을 한 줄 적는다. 안전모·조끼를 착용한 사진, 안 한 사진이 하나씩은 있어야 판정을 제대로 확인할 수 있다.
+- 실제 사진은 `tests/pi/inference/images/`, 공통 빈 화면은 `tests/fixtures/images/`에서 읽는다. 출처·라이선스·기대 판정 근거는 [사진 문서](../../tests/pi/inference/images/README.md)에 기록한다.
+- `expected.json`은 착용, 두 장비 미착용, 조끼 미착용, 사람 없음 4가지를 검사한다. 기대값을 모델 출력에 맞춰 바꾸지 않는다.

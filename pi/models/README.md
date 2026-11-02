@@ -77,3 +77,5 @@ python -m pytest tests/pi/inference
 ```
 
 입출력 호환성·수치 일치는 사진별 정확도를 보장하지 않는다. 실제 사진 검사는 HTTP 테스트에서 수행한다. Pi 5의 추론 시간·메모리·ESP32 연결 검증은 실물을 가진 명수 담당이며, 측정 시 커밋과 모델 SHA256을 함께 기록한다.
+
+실제 회귀 사진의 원본 라벨·라이선스·해시는 [tests/pi/inference/images/README.md](../../tests/pi/inference/images/README.md)에 있다. `expected.json`의 착용·미착용 기대값은 모델 출력과 별개로 유지한다.

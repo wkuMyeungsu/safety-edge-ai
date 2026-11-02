@@ -1,4 +1,7 @@
 {
-  "_설명": "tests/fixtures/images/의 사진별 기대 판정. 사진을 더하면 여기에 한 줄 더한다. 적은 필드만 비교한다 (verdict, has_helmet, has_vest).",
-  "blank.jpg": {"verdict": "no_person"}
+  "_설명": "images/의 실제 사진과 tests/fixtures/images/의 공통 사진. 기대값은 모델 출력이 아닌 원본 정답 라벨과 육안 확인으로 정한다. 출처는 images/README.md.",
+  "blank.jpg": {"verdict": "no_person", "persons": 0},
+  "test_11.jpg": {"verdict": "pass", "has_helmet": true, "has_vest": true},
+  "test_0.jpg": {"verdict": "fail", "has_helmet": false, "has_vest": false},
+  "test_26.jpg": {"verdict": "fail", "has_helmet": true, "has_vest": false}
 }
