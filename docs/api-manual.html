@@ -102,7 +102,7 @@ footer { color: var(--muted); font-size: 0.8rem; border-top: 1px solid var(--lin
     <pre>curl -H "X-Device-Id: test-woojin" -H "X-Device-Token: &lt;토큰&gt;" -H "Content-Type: image/jpeg" \
      --data-binary @사진.jpg https://rpi5.tail7377e4.ts.net/frame
 
-{"status": "queued", "queue": 1}</pre>
+{"status": "queued", "queue": 1, "frame": "ab12cd34"}</pre>
   </div>
 
   <div class="endpoint">
@@ -110,7 +110,7 @@ footer { color: var(--muted); font-size: 0.8rem; border-top: 1px solid var(--lin
     <pre>curl "https://rpi5.tail7377e4.ts.net/recent?device_id=test-woojin"
 
 {"items": [{
-  "device_id": "test-woojin", "received_at": "2026-11-02T04:22:10.873519+00:00",
+  "frame": "ab12cd34", "device_id": "test-woojin", "received_at": "2026-11-02T04:22:10.873519+00:00",
   "verdict": "fail", "has_helmet": false, "has_vest": false, "confidence": 0.966,
   "upload": "stored", "infer_ms": 454, "wait_ms": 0, "total_ms": 3373,
   "person_score": null, "person_count": null
@@ -121,6 +121,7 @@ footer { color: var(--muted); font-size: 0.8rem; border-top: 1px solid var(--lin
       <tr><td><code>upload</code></td><td><code>stored</code> Supabase 저장 · <code>buffered</code> Pi에 보관 후 나중에 저장 · <code>error</code> 저장 실패 · <code>null</code> 위반 아님</td></tr>
       <tr><td><code>has_helmet</code>, <code>has_vest</code>, <code>confidence</code>, <code>infer_ms</code></td><td>판정 결과 (판정 실패면 없음)</td></tr>
       <tr><td><code>received_at</code></td><td>받은 시각, UTC</td></tr>
+      <tr><td><code>frame</code></td><td>사진 번호. <code>202</code> 응답의 <code>frame</code>과 같고, Pi 로그에서 <code>frame=</code>으로 찾는다</td></tr>
     </table></div>
     <p>gateway를 다시 시작하면 비워진다. 오래 남길 기록은 Supabase와 웹에서 본다.</p>
   </div>

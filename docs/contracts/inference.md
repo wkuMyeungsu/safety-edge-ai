@@ -8,9 +8,12 @@
 ```
 POST http://inference:8003/predict
 Content-Type: image/jpeg
+X-Frame-Id: ab12cd34
 
 <ESP32가 보낸 JPEG 바이트 그대로>
 ```
+
+- `X-Frame-Id`는 선택. gateway가 붙인 사진 번호(8자리 hex)로, inference는 판정에 쓰지 않고 로그(`frame=`)에만 쓴다. 없거나 형식이 틀려도 판정은 그대로 한다.
 
 - 본문은 JPEG 바이트 그대로 보낸다 (multipart 아님). gateway가 ESP32에서 받은 것을 다시 인코딩하지 않는다.
 - 최대 2MB. `device_id`는 inference가 쓰지 않으므로 보내지 않는다 (gateway가 들고 있다가 uploader에 넘긴다).
