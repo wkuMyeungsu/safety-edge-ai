@@ -1,0 +1,31 @@
+# 비밀값
+.env
+.env.*
+!.env.example
+esp32/firmware/safety_cam/config.h
+
+# 모델 가중치 (용량 큼, 받는 법은 각 README에 기록)
+*.pt
+*.pth
+*.onnx
+*.eim
+esp32/model/*.zip
+
+# 실행 중 생기는 파일
+pi/buffer/
+
+# 테스트용 영상
+*.mp4
+*.mov
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# OS·편집기
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

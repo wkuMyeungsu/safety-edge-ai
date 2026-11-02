@@ -1,0 +1,601 @@
+<title>안전장비 감지 시스템 구조</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: 한 칼럼 기술 문서. 상단 구조도는 장비 → 컨테이너 순으로 상자를 겹쳐 그림. 강조색은 안전 조끼 형광 주황 하나만. */
+:root {
+  --bg: #f2f4f6;
+  --surface: #ffffff;
+  --ink: #16202a;
+  --muted: #5b6876;
+  --line: #c9d1da;
+  --zone-site: #e7ecf1;
+  --zone-cloud: #eceef7;
+  --dock: #f7f9fb;
+  --hivis: #d9480f;
+  --hivis-soft: #fff0e6;
+  --ok: #2b7a4b;
+  --fail: #c92a2a;
+  --code-bg: #eaeef2;
+  --font-body: "IBM Plex Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "Cascadia Code", Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #11161c; --surface: #18202a; --ink: #e6ebf0; --muted: #95a3b2; --line: #2e3a48;
+    --zone-site: #151c24; --zone-cloud: #161a27; --dock: #1b2430;
+    --hivis: #ff8a3d; --hivis-soft: #3a2416; --ok: #5cc58a; --fail: #ff6b6b; --code-bg: #0d1217;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #11161c; --surface: #18202a; --ink: #e6ebf0; --muted: #95a3b2; --line: #2e3a48;
+  --zone-site: #151c24; --zone-cloud: #161a27; --dock: #1b2430;
+  --hivis: #ff8a3d; --hivis-soft: #3a2416; --ok: #5cc58a; --fail: #ff6b6b; --code-bg: #0d1217;
+  color-scheme: dark;
+}
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.65;
+}
+.page {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding-block: 40px 72px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: flex;
+  flex-direction: column;
+  gap: 56px;
+}
+h1, h2, h3 { text-wrap: balance; line-height: 1.3; margin: 0; }
+h1 { font-size: 1.9rem; font-weight: 700; letter-spacing: -0.01em; }
+h2 { font-size: 1.3rem; font-weight: 700; }
+h3 { font-size: 1rem; font-weight: 600; }
+p { margin: 0; max-width: 68ch; }
+code, .mono { font-family: var(--font-mono); font-size: 0.86em; }
+:not(pre) > code { background: var(--code-bg); padding: 1px 5px; border-radius: 4px; }
+
+/* 머리말: 반사 테이프 띠 */
+header { display: flex; flex-direction: column; gap: 14px; }
+.tape {
+  height: 10px;
+  width: 168px;
+  background: repeating-linear-gradient(-45deg, var(--hivis) 0 12px, transparent 12px 20px);
+  border-radius: 2px;
+}
+.lede { color: var(--muted); font-size: 1.02rem; }
+
+section.block { display: flex; flex-direction: column; gap: 18px; }
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+/* ===== 구조도 ===== */
+.arch { display: flex; flex-direction: column; gap: 0; }
+.zone {
+  border: 1.5px dashed var(--line);
+  border-radius: 14px;
+  padding: 22px 18px 18px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.zone.site { background: var(--zone-site); }
+.zone.cloud { background: var(--zone-cloud); }
+.zone-label {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.site-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 0.85fr) auto minmax(0, 2fr);
+  gap: 0;
+  align-items: stretch;
+}
+.device {
+  background: var(--surface);
+  border: 1.5px solid var(--ink);
+  border-radius: 10px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+.device-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; }
+.device-head h3 { font-size: 1.02rem; }
+.sub { color: var(--muted); font-size: 0.8rem; }
+
+.chain { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0; }
+.chain li {
+  font-size: 0.86rem;
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--dock);
+}
+.chain li + li { margin-top: 18px; position: relative; }
+.chain li + li::before {
+  content: "↓";
+  position: absolute;
+  top: -19px; left: 14px;
+  color: var(--muted);
+  font-size: 0.8rem;
+  line-height: 18px;
+}
+.chain .branch { color: var(--muted); font-size: 0.78rem; }
+
+.model-tag {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--hivis);
+  background: var(--hivis-soft);
+  border: 1px solid var(--hivis);
+  border-radius: 999px;
+  padding: 0 7px;
+  margin-left: 4px;
+  vertical-align: 1px;
+  white-space: nowrap;
+}
+
+/* 연결선 */
+.wire {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 8px 10px;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--muted);
+  text-align: center;
+  min-width: 0;
+}
+.wire .arrow { font-size: 1.1rem; color: var(--ink); line-height: 1; }
+.wire .arrow .v { display: none; }
+.wire.hi .arrow, .wire.hi .w-label { color: var(--hivis); }
+.wire.vertical .arrow .h { display: none; }
+.wire.vertical .arrow .v { display: inline; }
+
+.os-line { font-size: 0.8rem; color: var(--muted); }
+.dock {
+  border: 1.5px solid var(--line);
+  border-radius: 8px;
+  background: var(--dock);
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.dock-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  grid-template-areas:
+    "gw   w1   inf"
+    "w2   .    w3"
+    "up   .    vol";
+  align-items: stretch;
+}
+.svc {
+  background: var(--surface);
+  border: 1px solid var(--ink);
+  border-radius: 8px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.svc-name { font-family: var(--font-mono); font-weight: 600; font-size: 0.88rem; }
+.svc-name .port { color: var(--hivis); font-weight: 600; }
+.svc ul { margin: 0; padding-left: 1.1em; font-size: 0.8rem; color: var(--muted); }
+.vol {
+  border: 1px dashed var(--muted);
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 0.8rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.vol .mono { font-weight: 600; }
+.vol .sub { font-size: 0.76rem; }
+.gw { grid-area: gw; } .inf { grid-area: inf; } .up { grid-area: up; } .volm { grid-area: vol; }
+.w1 { grid-area: w1; } .w2 { grid-area: w2; } .w3 { grid-area: w3; }
+.w2, .w3 { padding-block: 6px; }
+
+.cloud-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) auto minmax(0, 1fr) auto minmax(0, 0.7fr);
+  align-items: stretch;
+}
+.sb-parts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.sb-part {
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--dock);
+  padding: 7px 10px;
+  font-size: 0.8rem;
+  min-width: 0;
+}
+.sb-part b { display: block; font-family: var(--font-mono); font-size: 0.78rem; }
+.sb-part span { color: var(--muted); }
+.viewer { border-style: dashed; border-color: var(--muted); }
+
+.uplink { padding-block: 10px; }
+
+@media (max-width: 880px) {
+  .site-grid { grid-template-columns: minmax(0, 1fr); }
+  .site-grid > .wire .arrow .h { display: none; }
+  .site-grid > .wire .arrow .v { display: inline; }
+  .dock-grid {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: "gw" "w1" "inf" "w3" "vol" "w2" "up";
+  }
+  .dock-grid .w1 .arrow .h { display: none; }
+  .dock-grid .w1 .arrow .v { display: inline; }
+  .cloud-grid { grid-template-columns: minmax(0, 1fr); }
+  .cloud-grid > .wire .arrow .h { display: none; }
+  .cloud-grid > .wire .arrow .v { display: inline; }
+}
+@media (max-width: 520px) {
+  .sb-parts { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* ===== 흐름 ===== */
+.flow { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0; counter-reset: step; }
+.flow li {
+  counter-increment: step;
+  display: grid;
+  grid-template-columns: 2.4rem minmax(0, 1fr);
+  gap: 12px;
+  padding: 12px 0;
+  border-top: 1px solid var(--line);
+}
+.flow li:last-child { border-bottom: 1px solid var(--line); }
+.flow li::before {
+  content: counter(step, decimal-leading-zero);
+  font-family: var(--font-mono);
+  font-weight: 600;
+  color: var(--hivis);
+  font-size: 0.9rem;
+  padding-top: 2px;
+}
+.flow .where { font-family: var(--font-mono); font-size: 0.74rem; color: var(--muted); display: block; }
+.verdict-fail { color: var(--fail); font-weight: 600; }
+.verdict-ok { color: var(--ok); font-weight: 600; }
+
+/* ===== 표 ===== */
+.table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
+table { border-collapse: collapse; width: 100%; font-size: 0.86rem; min-width: 640px; }
+th, td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--line); vertical-align: top; }
+tr:last-child td { border-bottom: none; }
+th { font-size: 0.74rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); font-weight: 600; background: var(--dock); }
+td.mono, td code { white-space: nowrap; }
+
+/* ===== 구성 요소 카드 ===== */
+.parts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.part {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+.part-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 12px; }
+.part-head .mono { color: var(--muted); font-size: 0.78rem; }
+.part ul { margin: 0; padding-left: 1.1em; font-size: 0.88rem; display: flex; flex-direction: column; gap: 3px; }
+@media (max-width: 720px) { .parts { grid-template-columns: minmax(0, 1fr); } }
+
+/* ===== 코드 ===== */
+pre {
+  margin: 0;
+  background: var(--code-bg);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 16px 18px;
+  overflow-x: auto;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  line-height: 1.6;
+  color: var(--ink);
+}
+pre .c { color: var(--muted); }
+pre .k { color: var(--hivis); }
+.two { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: 14px; align-items: start; }
+@media (max-width: 820px) { .two { grid-template-columns: minmax(0, 1fr); } }
+.note-list { margin: 0; padding-left: 1.1em; display: flex; flex-direction: column; gap: 6px; max-width: 72ch; }
+
+footer { color: var(--muted); font-size: 0.8rem; border-top: 1px solid var(--line); padding-top: 16px; }
+</style>
+
+<div class="page">
+
+<header>
+  <div class="tape" aria-hidden="true"></div>
+  <h1>안전장비 감지 시스템 구조</h1>
+  <p class="lede">ESP32-S3가 사람을 감지한 프레임만 라즈베리 파이 5로 보내고, 파이는 안전모·조끼 착용 여부를 판별해 위반 건을 Supabase에 기록한다. 웹은 Supabase를 직접 조회해 위반 기록을 보여 준다.</p>
+</header>
+
+<!-- ============ 구조도 ============ -->
+<section class="block" aria-labelledby="h-arch">
+  <div class="eyebrow">Architecture</div>
+  <h2 id="h-arch">장비와 컨테이너 배치</h2>
+
+  <div class="arch">
+    <div class="zone site">
+      <div class="zone-label">현장 · 같은 Wi-Fi (LAN)</div>
+      <div class="site-grid">
+
+        <div class="device">
+          <div class="device-head"><h3>ESP32-S3</h3><span class="sub">초소형 엣지 카메라 · 펌웨어</span></div>
+          <ol class="chain">
+            <li>카메라 촬영</li>
+            <li>96×96으로 축소</li>
+            <li>Edge Impulse 사람 감지 <span class="model-tag">모델 1</span></li>
+            <li>사람 있음 + 쿨다운 3초 경과<br><span class="branch">아니면 대기</span></li>
+            <li>원본 JPEG (QVGA/VGA) HTTP POST</li>
+          </ol>
+        </div>
+
+        <div class="wire hi">
+          <span class="arrow"><span class="h">→</span><span class="v">↓</span></span>
+          <span class="w-label">POST /frame<br>JPEG + device_id</span>
+        </div>
+
+        <div class="device">
+          <div class="device-head"><h3>Raspberry Pi 5 · 4GB</h3><span class="sub">엣지 게이트웨이</span></div>
+          <div class="os-line">Raspberry Pi OS Lite 64-bit · Docker Engine</div>
+          <div class="dock">
+            <div class="zone-label">docker compose 내부 네트워크</div>
+            <div class="dock-grid">
+              <div class="svc gw">
+                <div class="svc-name">gateway <span class="port">:8001</span></div>
+                <ul><li>FastAPI, ESP32 사진 수신</li><li>대기 줄 최대 2, 넘치면 버림</li><li>inference → uploader 순서 관리</li></ul>
+              </div>
+              <div class="wire w1">
+                <span class="arrow"><span class="h">⇄</span><span class="v">⇅</span></span>
+                <span>JPEG →<br>← 판정 결과</span>
+              </div>
+              <div class="svc inf">
+                <div class="svc-name">inference <span class="port">:8003</span></div>
+                <ul><li>onnxruntime (CPU)</li><li>YOLOv8 PPE <span class="model-tag">모델 2</span></li><li>안전모·조끼 → pass | fail</li></ul>
+              </div>
+              <div class="wire w2 hi vertical">
+                <span class="arrow"><span class="h">→</span><span class="v">↓</span></span>
+                <span class="w-label">fail일 때만<br>결과 + JPEG</span>
+              </div>
+              <div class="wire w3 vertical">
+                <span class="arrow"><span class="h">←</span><span class="v">↑</span></span>
+                <span>읽기 전용 마운트</span>
+              </div>
+              <div class="svc up">
+                <div class="svc-name">uploader <span class="port">:8004</span></div>
+                <ul><li>Supabase 저장·사진 업로드</li><li>실패하면 버퍼에 쌓고 재시도</li><li><code>.env</code>의 service key 사용</li></ul>
+              </div>
+              <div class="vol volm">
+                <span class="mono">./models</span>
+                <span class="sub">ppe_yolov8.onnx (이미지 밖에 보관)</span>
+                <span class="mono" style="margin-top:6px">./buffer</span>
+                <span class="sub">업로드 실패분 보관 (uploader에 마운트)</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="wire hi vertical uplink">
+      <span class="arrow"><span class="h">↓</span><span class="v">↓</span></span>
+      <span class="w-label">HTTPS · service key</span>
+    </div>
+
+    <div class="zone cloud">
+      <div class="zone-label">클라우드 관제</div>
+      <div class="cloud-grid">
+        <div class="device">
+          <div class="device-head"><h3>Supabase</h3></div>
+          <div class="sb-parts">
+            <div class="sb-part"><b>Postgres</b><span>safety_logs 테이블</span></div>
+            <div class="sb-part"><b>Storage</b><span>violations 버킷 (위반 사진)</span></div>
+            <div class="sb-part"><b>Realtime</b><span>safety_logs INSERT 알림</span></div>
+            <div class="sb-part"><b>RLS</b><span>anon은 읽기만 허용</span></div>
+          </div>
+        </div>
+        <div class="wire">
+          <span class="arrow"><span class="h">⇄</span><span class="v">⇅</span></span>
+          <span>anon key<br>조회 + 실시간 구독</span>
+        </div>
+        <div class="device">
+          <div class="device-head"><h3>Web</h3><span class="sub">정적 페이지</span></div>
+          <ul class="chain">
+            <li>위반 기록 목록</li>
+            <li>위반 사진 썸네일</li>
+            <li>오늘 위반 수</li>
+          </ul>
+        </div>
+        <div class="wire">
+          <span class="arrow"><span class="h">→</span><span class="v">↓</span></span>
+          <span>HTTPS</span>
+        </div>
+        <div class="device viewer">
+          <div class="device-head"><h3>관리자 브라우저</h3></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 처리 흐름 ============ -->
+<section class="block" aria-labelledby="h-flow">
+  <div class="eyebrow">Sequence</div>
+  <h2 id="h-flow">사진 한 장의 처리 순서</h2>
+  <ol class="flow">
+    <li><div><span class="where">ESP32-S3</span>카메라 프레임을 96×96으로 줄여 Edge Impulse 사람 감지 모델을 돌린다. 사람이 없으면 아무것도 보내지 않는다.</div></li>
+    <li><div><span class="where">ESP32-S3</span>사람이 감지되고 마지막 전송 뒤 3초가 지났으면, 축소 전 원본 JPEG를 <code>POST /frame</code>으로 gateway에 보낸다.</div></li>
+    <li><div><span class="where">gateway</span>대기 줄에 자리가 있으면 받아 넣고 <code>202</code>를 돌려준다. 대기 줄이 차 있으면 <code>503</code>을 돌려주고 사진을 버린다. 받은 수와 버린 수는 로그로 남긴다.</div></li>
+    <li><div><span class="where">gateway → inference</span>대기 줄에서 꺼낸 사진을 <code>POST /predict</code>로 보낸다. inference는 YOLOv8 PPE ONNX 모델로 안전모·조끼를 찾아 판정 결과 JSON을 돌려준다.</div></li>
+    <li><div><span class="where">gateway</span>판정이 <span class="verdict-ok">pass</span>면 로그만 남기고 끝낸다. <span class="verdict-fail">fail</span>이면 판정 결과와 JPEG를 uploader로 넘긴다.</div></li>
+    <li><div><span class="where">uploader → Supabase</span>사진을 violations 버킷에 올리고, 받은 URL과 함께 safety_logs에 한 행을 넣는다. 실패하면 <code>./buffer</code>에 저장해 두고 재시도한다.</div></li>
+    <li><div><span class="where">Web</span>Realtime으로 새 행 알림을 받아 목록과 오늘 위반 수를 갱신한다.</div></li>
+  </ol>
+</section>
+
+<!-- ============ 구간별 통신 ============ -->
+<section class="block" aria-labelledby="h-links">
+  <div class="eyebrow">Interfaces</div>
+  <h2 id="h-links">구간별 통신</h2>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>구간</th><th>방식</th><th>내용</th><th>인증</th></tr></thead>
+      <tbody>
+        <tr><td>ESP32 → gateway</td><td>HTTP POST · LAN</td><td>사람이 감지된 프레임 JPEG 1장, 헤더에 <code>device_id</code></td><td>없음 (LAN 내부)</td></tr>
+        <tr><td>gateway ⇄ inference</td><td>HTTP · compose 내부망</td><td>JPEG → 판정 JSON</td><td>없음 (외부 포트 미개방)</td></tr>
+        <tr><td>gateway → uploader</td><td>HTTP · compose 내부망</td><td>fail 판정 JSON + JPEG</td><td>없음 (외부 포트 미개방)</td></tr>
+        <tr><td>uploader → Supabase</td><td>HTTPS</td><td>safety_logs 행 저장, violations 버킷 업로드</td><td>service key (파이에만 보관)</td></tr>
+        <tr><td>Web → Supabase</td><td>HTTPS + WebSocket</td><td>safety_logs 조회, INSERT 실시간 구독, 사진 URL</td><td>anon key + RLS 읽기 전용</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ============ 구성 요소 ============ -->
+<section class="block" aria-labelledby="h-parts">
+  <div class="eyebrow">Components</div>
+  <h2 id="h-parts">구성 요소별 역할</h2>
+  <div class="parts">
+    <div class="part">
+      <div class="part-head"><h3>gateway</h3><span class="mono">외부 :8001</span></div>
+      <ul>
+        <li>FastAPI, <code>POST /frame</code> 하나만 외부에 연다.</li>
+        <li><code>asyncio.Queue(maxsize=2)</code> + 처리 작업자 1개.</li>
+        <li>inference와 uploader를 부르는 순서를 이곳에서만 정한다.</li>
+      </ul>
+    </div>
+    <div class="part">
+      <div class="part-head"><h3>inference</h3><span class="mono">내부 :8003</span></div>
+      <ul>
+        <li><code>POST /predict</code>: JPEG를 받아 판정 JSON을 돌려준다. 다른 서비스를 부르지 않는다.</li>
+        <li>모델은 서버 시작 때 한 번만 불러온다. uvicorn worker는 1개.</li>
+        <li>패키지: onnxruntime, numpy, opencv-python-headless, fastapi, uvicorn.</li>
+        <li><code>GET /health</code>로 healthcheck.</li>
+      </ul>
+    </div>
+    <div class="part">
+      <div class="part-head"><h3>uploader</h3><span class="mono">내부 :8004</span></div>
+      <ul>
+        <li><code>POST /records</code>: 판정 JSON + JPEG를 받아 Supabase에 저장한다.</li>
+        <li>네트워크 오류 때는 <code>./buffer</code>에 파일로 남기고 주기적으로 다시 보낸다.</li>
+        <li>Supabase service key를 가진 유일한 컨테이너.</li>
+      </ul>
+    </div>
+    <div class="part">
+      <div class="part-head"><h3>Supabase 저장 구조</h3><span class="mono">safety_logs</span></div>
+      <ul>
+        <li><code>id</code> bigint identity, 기본 키</li>
+        <li><code>created_at</code> timestamptz, 기본값 now()</li>
+        <li><code>device_id</code> text</li>
+        <li><code>has_helmet</code>, <code>has_vest</code> boolean</li>
+        <li><code>confidence</code> real</li>
+        <li><code>image_url</code> text, violations 버킷 경로</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ============ compose ============ -->
+<section class="block" aria-labelledby="h-compose">
+  <div class="eyebrow">Deployment</div>
+  <h2 id="h-compose">docker-compose와 폴더 구조</h2>
+  <div class="two">
+<pre><span class="k">services:</span>
+  <span class="k">gateway:</span>
+    build: ./services/gateway
+    ports: ["8001:8001"]
+    environment:
+      INFERENCE_URL: http://inference:8003
+      UPLOADER_URL: http://uploader:8004
+      QUEUE_MAX: "2"
+    depends_on: [inference, uploader]
+    mem_limit: 256m
+    restart: unless-stopped
+
+  <span class="k">inference:</span>
+    build: ./services/inference
+    volumes: ["./models:/models:ro"]
+    environment:
+      MODEL_PATH: /models/ppe_yolov8.onnx
+      ORT_THREADS: "3"
+      CONF_THRES: "0.4"
+    mem_limit: 1g
+    cpus: "3"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c",
+        "import urllib.request;urllib.request.urlopen('http://localhost:8003/health')"]
+      interval: 15s
+
+  <span class="k">uploader:</span>
+    build: ./services/uploader
+    env_file: .env     <span class="c"># SUPABASE_URL, SUPABASE_SERVICE_KEY</span>
+    volumes: ["./buffer:/buffer"]
+    mem_limit: 256m
+    restart: unless-stopped
+</pre>
+<pre>safety-system/
+├─ docker-compose.yml
+├─ .env              <span class="c"># git 제외</span>
+├─ models/           <span class="c"># git 제외</span>
+│  └─ ppe_yolov8.onnx
+├─ buffer/           <span class="c"># git 제외</span>
+├─ services/
+│  ├─ gateway/
+│  │  ├─ Dockerfile
+│  │  └─ app.py
+│  ├─ inference/
+│  │  ├─ Dockerfile
+│  │  └─ app.py
+│  └─ uploader/
+│     ├─ Dockerfile
+│     └─ app.py
+├─ web/
+├─ firmware/esp32/
+└─ tools/
+   ├─ export_onnx.py
+   ├─ verify_onnx.py
+   └─ post_test_image.py</pre>
+  </div>
+  <ul class="note-list">
+    <li>베이스 이미지는 <code>python:3.11-slim</code>(arm64 제공)이고, 이미지는 파이에서 <code>docker compose build</code>로 직접 빌드한다.</li>
+    <li>ultralytics와 torch는 PC에서 ONNX로 변환할 때만 쓰고, 파이 이미지에는 넣지 않는다.</li>
+    <li><code>mem_limit</code> 값은 시작값이다. <code>docker stats</code>로 실제 사용량을 확인해 조정한다.</li>
+    <li>외부로 열리는 포트는 gateway의 8001뿐이다. inference와 uploader는 compose 내부망에서만 접근된다.</li>
+  </ul>
+</section>
+
+<footer>저장 범위: 위반(fail) 건만 Supabase에 기록과 사진을 저장한다. pass 건은 gateway 로그에만 남는다.</footer>
+
+</div>

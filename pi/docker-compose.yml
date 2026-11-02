@@ -1,0 +1,52 @@
+# 라즈베리 파이 5 (4GB)에서 실행. mem_limit은 시작값이며 docker stats로 확인해 조정한다.
+
+x-health: &health
+  interval: 15s
+  timeout: 3s
+  retries: 3
+
+services:
+  gateway:
+    build: ./gateway
+    environment:
+      SERVICE_NAME: gateway
+      PORT: "8001"
+      INFERENCE_URL: http://inference:8003
+      UPLOADER_URL: http://uploader:8004
+    ports: ["8001:8001"]
+    depends_on: [inference, uploader]
+    mem_limit: 256m
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request;urllib.request.urlopen('http://localhost:8001/health')"]
+      <<: *health
+
+  inference:
+    build: ./inference
+    environment:
+      SERVICE_NAME: inference
+      PORT: "8003"
+      MODEL_PATH: /models/ppe_yolov8.onnx
+    volumes: ["./models:/models:ro"]
+    mem_limit: 1g
+    cpus: "3"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request;urllib.request.urlopen('http://localhost:8003/health')"]
+      <<: *health
+
+  uploader:
+    build: ./uploader
+    environment:
+      SERVICE_NAME: uploader
+      PORT: "8004"
+      BUFFER_DIR: /buffer
+    env_file:
+      - path: .env
+        required: false
+    volumes: ["./buffer:/buffer"]
+    mem_limit: 256m
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request;urllib.request.urlopen('http://localhost:8004/health')"]
+      <<: *health
